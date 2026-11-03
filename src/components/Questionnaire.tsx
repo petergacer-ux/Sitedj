@@ -50,6 +50,7 @@ function toSummary(d: Data): Record<string, string> {
     .map(([k, v]) => `${k} : ${v}`)
     .join(" | ");
   return {
+    Formulaire: "Préparer ma soirée",
     "Nom(s)": d.noms,
     Email: d.email,
     Téléphone: d.tel,

@@ -23,6 +23,7 @@ export function Devis() {
     const res = await submitForm(
       `Demande de devis — ${g("type") || "Événement"} — ${g("nom")}`,
       {
+        Formulaire: "Demande de devis",
         Nom: g("nom"),
         Email: g("email"),
         Téléphone: g("tel"),
