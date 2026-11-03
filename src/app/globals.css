@@ -1,0 +1,196 @@
+@import "tailwindcss";
+
+/* Les valeurs viennent de src/styles/tokens.ts (injectées en :root par le layout).
+   Ici on se contente de les exposer à Tailwind. */
+@theme inline {
+  --color-night-950: var(--c-night950);
+  --color-night-900: var(--c-night900);
+  --color-night-800: var(--c-night800);
+  --color-night-700: var(--c-night700);
+  --color-navy: var(--c-navy);
+  --color-gold: var(--c-gold);
+  --color-gold-soft: var(--c-gold-soft);
+  --color-gold-deep: var(--c-gold-deep);
+  --color-magenta: var(--c-magenta);
+  --color-magenta-soft: var(--c-magenta-soft);
+  --color-cyan: var(--c-cyan);
+  --color-violet: var(--c-violet);
+  --color-ink: var(--c-ink);
+  --color-ink-muted: var(--c-ink-muted);
+  --color-ink-faint: var(--c-ink-faint);
+  --color-line: var(--c-line);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  --shadow-glow-gold: var(--glow-gold);
+  --shadow-glow-magenta: var(--glow-magenta);
+  --shadow-glow-cyan: var(--glow-cyan);
+  --shadow-soft: var(--glow-soft);
+
+  --ease-stage: var(--ease);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Base                                                                        */
+/* -------------------------------------------------------------------------- */
+
+html {
+  background: var(--c-night950);
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+body {
+  background: var(--c-night950);
+  color: var(--c-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+/* Grain léger sur tout le site */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: rgb(var(--rgb-magenta) / 0.6);
+  color: var(--c-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-gold);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Utilitaires maison                                                          */
+/* -------------------------------------------------------------------------- */
+
+@utility container-stage {
+  width: 100%;
+  max-width: var(--s-max);
+  margin-inline: auto;
+  padding-inline: var(--s-gutter);
+}
+
+@utility section-pad {
+  padding-block: var(--s-section);
+}
+
+@utility text-glow-gold {
+  text-shadow: 0 0 18px rgb(var(--rgb-gold) / 0.55), 0 0 60px rgb(var(--rgb-gold) / 0.25);
+}
+
+@utility text-gradient {
+  background: linear-gradient(100deg, var(--c-gold-soft) 0%, var(--c-gold) 35%, var(--c-magenta-soft) 70%, var(--c-magenta) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--c-gold);
+}
+
+@utility glass {
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015));
+  border: 1px solid var(--c-line);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Marqueur des infos manquantes */
+.a-completer {
+  border: 1px dashed rgb(var(--rgb-gold) / 0.7);
+  background: rgb(var(--rgb-gold) / 0.08);
+  color: var(--c-gold-soft);
+  border-radius: 6px;
+  padding: 0 0.35em;
+  font-style: normal;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Animations CSS (égaliseur, emplacements photo, marquee)                    */
+/* -------------------------------------------------------------------------- */
+
+@keyframes eq {
+  0%, 100% { transform: scaleY(var(--eq-min, 0.15)); }
+  50% { transform: scaleY(var(--eq-max, 1)); }
+}
+
+@keyframes kick {
+  0%, 100% { transform: scaleY(0.25); }
+  8% { transform: scaleY(1); }
+  40% { transform: scaleY(0.45); }
+}
+
+@keyframes placeholder-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -10px, 0); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.photo-slot {
+  background: linear-gradient(120deg, var(--c-night800), rgb(var(--rgb-magenta) / 0.35), var(--c-night700), rgb(var(--rgb-gold) / 0.3), var(--c-night800));
+  background-size: 300% 300%;
+  animation: placeholder-shift 14s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
