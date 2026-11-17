@@ -93,19 +93,19 @@ export function SectionHeading({
   return (
     <div className={`max-w-3xl ${align === "center" ? "mx-auto text-center" : ""}`}>
       <FadeIn>
-        <p className="eyebrow mb-5 flex items-center gap-3 data-[c=1]:justify-center" data-c={align === "center" ? 1 : 0}>
-          <span className="h-px w-8 bg-gold/60" aria-hidden />
+        <p className="eyebrow mb-5 flex items-center gap-2.5 data-[c=1]:justify-center" data-c={align === "center" ? 1 : 0}>
+          <span className="size-1.5 rounded-full bg-gold" aria-hidden />
           {eyebrow}
         </p>
       </FadeIn>
       <MaskText
         id={titleId}
         text={title}
-        className="font-display text-[clamp(2rem,5.2vw,4.25rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-balance"
+        className="font-display text-[clamp(2rem,4.6vw,3.75rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-balance"
       />
       {intro && (
         <FadeIn delay={0.15}>
-          <p className="mt-6 text-lg text-ink-muted text-pretty">
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-muted text-pretty">
             {intro}
           </p>
         </FadeIn>

@@ -63,16 +63,15 @@ export function Cursor() {
       <div
         ref={halo}
         data-hover="0"
-        className="absolute left-0 top-0 -ml-5 -mt-5 size-10 rounded-full opacity-0 transition-[width,height,margin,background-color,opacity] duration-300 ease-stage data-[hover=1]:-ml-8 data-[hover=1]:-mt-8 data-[hover=1]:size-16 data-[hover=1]:bg-gold/10"
+        className="absolute left-0 top-0 -ml-5 -mt-5 size-10 rounded-full opacity-0 transition-[width,height,margin,background-color,opacity] duration-300 ease-stage data-[hover=1]:-ml-8 data-[hover=1]:-mt-8 data-[hover=1]:size-16 data-[hover=1]:bg-gold/5"
         style={{
-          boxShadow: "0 0 30px rgb(var(--rgb-gold) / .35), inset 0 0 12px rgb(var(--rgb-gold) / .25)",
-          border: "1px solid rgb(var(--rgb-gold) / .45)",
+          border: "1px solid rgb(var(--rgb-gold) / .5)",
         }}
       />
       <div
         ref={dot}
         className="absolute left-0 top-0 -ml-[3px] -mt-[3px] size-[6px] rounded-full bg-gold-soft opacity-0"
-        style={{ boxShadow: "0 0 10px var(--c-gold)" }}
+        style={{}}
       />
     </div>
   );

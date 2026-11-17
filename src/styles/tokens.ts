@@ -6,14 +6,14 @@
 
 export const colors = {
   /** Nuit : du presque noir au bleu marine du logo */
-  night950: "#03050d",
-  night900: "#060a1a",
-  night800: "#0a1130",
-  night700: "#111c48",
+  night950: "#07080c",
+  night900: "#0c0e14",
+  night800: "#13161f",
+  night700: "#1a1f2e",
   navy: "#1b2a6b",
   /** Lumières */
-  gold: "#f3c66b",
-  goldSoft: "#ffe2a3",
+  gold: "#e2c08a",
+  goldSoft: "#f1dcb8",
   goldDeep: "#b98a33",
   magenta: "#ff2f8e",
   magentaSoft: "#ff7ab8",
@@ -21,14 +21,14 @@ export const colors = {
   violet: "#8b5cff",
   /** Texte */
   ink: "#f6f1e7",
-  inkMuted: "#a9aec8",
-  inkFaint: "#6b7194",
-  line: "rgba(246, 241, 231, 0.10)",
+  inkMuted: "#9a9ca6",
+  inkFaint: "#5c5f6b",
+  line: "rgba(246, 241, 231, 0.09)",
 } as const;
 
 /** Les couleurs « lumière » au format RGB (pour les canvas et les rgba()). */
 export const lightRGB = {
-  gold: [243, 198, 107],
+  gold: [226, 192, 138],
   magenta: [255, 47, 142],
   cyan: [63, 227, 255],
   violet: [139, 92, 255],
@@ -45,8 +45,8 @@ export const fonts = {
 export const radii = {
   sm: "0.5rem",
   md: "1rem",
-  lg: "1.75rem",
-  xl: "2.5rem",
+  lg: "1.25rem",
+  xl: "1.75rem",
   pill: "999px",
 } as const;
 
@@ -59,10 +59,10 @@ export const space = {
 } as const;
 
 export const glows = {
-  gold: "0 0 0 1px rgba(243,198,107,.35), 0 0 24px rgba(243,198,107,.35), 0 0 80px rgba(243,198,107,.18)",
-  magenta: "0 0 0 1px rgba(255,47,142,.35), 0 0 24px rgba(255,47,142,.35), 0 0 80px rgba(255,47,142,.18)",
-  cyan: "0 0 0 1px rgba(63,227,255,.3), 0 0 24px rgba(63,227,255,.3), 0 0 80px rgba(63,227,255,.15)",
-  soft: "0 30px 80px -20px rgba(0,0,0,.7)",
+  gold: "0 0 0 1px rgba(226,192,138,.35)",
+  magenta: "0 0 0 1px rgba(246,241,231,.18)",
+  cyan: "0 0 0 1px rgba(246,241,231,.18)",
+  soft: "0 24px 60px -30px rgba(0,0,0,.6)",
 } as const;
 
 export const motion = {

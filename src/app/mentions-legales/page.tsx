@@ -19,7 +19,7 @@ export default function MentionsLegales() {
   return (
     <section className="container-stage max-w-3xl pb-24 pt-36">
       <p className="eyebrow mb-4">Informations</p>
-      <h1 className="font-display text-4xl font-semibold sm:text-5xl">Mentions légales</h1>
+      <h1 className="font-display text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Mentions légales</h1>
       <dl className="mt-12 divide-y divide-line border-y border-line">
         {rows.map(([k, v]) => (
           <div key={k} className="grid gap-1 py-4 sm:grid-cols-[14rem_1fr]">

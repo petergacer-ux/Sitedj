@@ -22,6 +22,7 @@
 
   --font-display: var(--font-display);
   --font-sans: var(--font-body);
+  --font-serif: var(--font-serif);
 
   --radius-sm: var(--r-sm);
   --radius-md: var(--r-md);
@@ -74,7 +75,7 @@ body::after {
   inset: 0;
   z-index: 60;
   pointer-events: none;
-  opacity: 0.07;
+  opacity: 0.025;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -106,29 +107,25 @@ body::after {
 }
 
 @utility text-glow-gold {
-  text-shadow: 0 0 18px rgb(var(--rgb-gold) / 0.55), 0 0 60px rgb(var(--rgb-gold) / 0.25);
+  text-shadow: none;
 }
 
 @utility text-gradient {
-  background: linear-gradient(100deg, var(--c-gold-soft) 0%, var(--c-gold) 35%, var(--c-magenta-soft) 70%, var(--c-magenta) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-@utility eyebrow {
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
   color: var(--c-gold);
 }
 
+@utility eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-ink-muted);
+}
+
 @utility glass {
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015));
+  background: rgb(255 255 255 / 0.025);
   border: 1px solid var(--c-line);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 /* Marqueur des infos manquantes */
@@ -179,9 +176,9 @@ body::after {
 }
 
 .photo-slot {
-  background: linear-gradient(120deg, var(--c-night800), rgb(var(--rgb-magenta) / 0.35), var(--c-night700), rgb(var(--rgb-gold) / 0.3), var(--c-night800));
+  background: linear-gradient(120deg, var(--c-night900), var(--c-night700), rgb(var(--rgb-gold) / 0.12), var(--c-night800));
   background-size: 300% 300%;
-  animation: placeholder-shift 14s ease-in-out infinite;
+  animation: placeholder-shift 18s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

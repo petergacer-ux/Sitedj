@@ -149,7 +149,7 @@ export function Questionnaire() {
               disabled={i > step}
               className="group w-full text-left disabled:cursor-default"
             >
-              <span className={`block h-1 rounded-full transition-colors duration-500 ${i <= step ? "bg-gradient-to-r from-gold to-magenta" : "bg-line"}`} />
+              <span className={`block h-1 rounded-full transition-colors duration-500 ${i <= step ? "bg-gold" : "bg-line"}`} />
               <span className={`mt-2 hidden text-xs sm:block ${i === step ? "text-gold" : "text-ink-faint"}`}>{s}</span>
             </button>
           </li>
@@ -163,7 +163,7 @@ export function Questionnaire() {
           e.preventDefault();
           if (step < STEPS.length - 1) go(step + 1);
         }}
-        className="glass relative overflow-hidden rounded-xl p-6 shadow-soft sm:p-10"
+        className="relative overflow-hidden rounded-xl border border-line p-6 sm:p-10"
       >
         <AnimatePresence mode="wait" custom={dir} initial={false}>
           <motion.fieldset
@@ -252,8 +252,8 @@ export function Questionnaire() {
                                     ? ni === 0
                                       ? "border-ink-faint bg-white/10 text-ink"
                                       : ni === 3
-                                        ? "border-magenta bg-magenta/20 text-magenta-soft shadow-glow-magenta"
-                                        : "border-gold bg-gold/15 text-gold-soft"
+                                        ? "border-gold bg-gold text-night-950"
+                                        : "border-gold/70 bg-gold/10 text-ink"
                                     : "border-line text-ink-faint hover:text-ink"
                                 }`}
                               >
@@ -303,7 +303,7 @@ export function Questionnaire() {
                   </MagneticButton>
                   <MagneticButton variant="ghost" onClick={download}>Télécharger le récapitulatif</MagneticButton>
                 </div>
-                {!data.email && <p className="mt-3 text-sm text-magenta-soft">Indiquez votre e-mail à l&apos;étape « Vous » pour envoyer.</p>}
+                {!data.email && <p className="mt-3 text-sm text-gold">Indiquez votre e-mail à l&apos;étape « Vous » pour envoyer.</p>}
                 <div aria-live="polite" className="mt-4 text-sm">
                   {status === "sent" && <p className="text-gold">{formulaires.messageSucces}</p>}
                   {status === "mailto" && (
@@ -312,7 +312,7 @@ export function Questionnaire() {
                       <a className="text-gold underline" href={`mailto:${entreprise.email}`}>{entreprise.email}</a>.
                     </p>
                   )}
-                  {status === "error" && <p className="text-magenta-soft">{formulaires.messageErreur}</p>}
+                  {status === "error" && <p className="text-gold">{formulaires.messageErreur}</p>}
                 </div>
               </div>
             )}
@@ -330,7 +330,7 @@ export function Questionnaire() {
           {step < STEPS.length - 1 ? (
             <MagneticButton type="submit">Suivant →</MagneticButton>
           ) : (
-            <button type="button" onClick={reset} className="text-sm text-ink-faint hover:text-magenta-soft">Tout effacer</button>
+            <button type="button" onClick={reset} className="text-sm text-ink-faint hover:text-gold">Tout effacer</button>
           )}
         </div>
       </form>

@@ -37,23 +37,15 @@ export function MagneticButton({ href, onClick, children, variant = "gold", clas
   };
 
   const base =
-    "group relative inline-flex items-center justify-center gap-3 rounded-full px-7 py-4 font-display text-[0.8rem] font-medium uppercase tracking-[0.14em] transition-[box-shadow,background-color,color] duration-300 select-none disabled:opacity-60 disabled:pointer-events-none";
+    "group relative inline-flex items-center justify-center gap-3 rounded-full px-7 py-3.5 text-[0.95rem] font-medium transition-[border-color,background-color,color] duration-300 select-none disabled:opacity-50 disabled:pointer-events-none";
   const styles =
     variant === "gold"
-      ? "bg-gold text-night-950 shadow-glow-gold hover:bg-gold-soft"
-      : "glass text-ink hover:shadow-glow-magenta";
+      ? "bg-ink text-night-950 hover:bg-gold"
+      : "border border-white/15 text-ink hover:border-white/40";
 
   const inner = (
     <>
       <span className="relative z-10 flex items-center gap-3">{children}</span>
-      {variant === "gold" && (
-        <span
-          aria-hidden
-          className="absolute inset-0 overflow-hidden rounded-full"
-        >
-          <span className="absolute -inset-y-2 -left-1/2 w-1/3 -skew-x-12 bg-white/40 blur-md transition-transform duration-700 ease-stage group-hover:translate-x-[420%]" />
-        </span>
-      )}
     </>
   );
 

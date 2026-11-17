@@ -57,15 +57,15 @@ function Marquee({ items, direction, accent }: { items: string[]; direction: 1 |
         {(reduced ? items : row).map((s, i) => (
           <span key={i} aria-hidden={i >= items.length} className="flex shrink-0 items-center">
             <span
-              className={`px-5 font-display text-[clamp(1.6rem,4.8vw,4rem)] font-semibold uppercase tracking-[-0.01em] sm:px-8 ${
+              className={`px-5 font-display text-[clamp(1.75rem,4.4vw,3.5rem)] font-medium tracking-[-0.04em] sm:px-8 ${
                 (i + (accent === "gold" ? 0 : 1)) % 2 === 0
                   ? "text-ink"
-                  : "text-transparent [-webkit-text-stroke:1.2px_var(--c-gold)]"
+                  : "font-serif font-normal italic tracking-normal text-gold"
               }`}
             >
               {s}
             </span>
-            <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${accent === "gold" ? "bg-gold shadow-glow-gold" : "bg-magenta shadow-glow-magenta"}`} />
+            <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-ink-faint" />
           </span>
         ))}
       </div>
@@ -79,8 +79,7 @@ export function Musique() {
   const b = musique.styles.slice(half);
   return (
     <section id="musique" aria-labelledby="musique-titre" className="relative section-pad overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_50%,rgb(var(--rgb-violet)/.12),transparent)]" />
-      <div className="container-stage">
+            <div className="container-stage">
         <SectionHeading titleId="musique-titre" eyebrow={musique.surTitre} title={musique.titre} intro={musique.intro} align="center" />
       </div>
       <ul className="sr-only">
@@ -88,7 +87,7 @@ export function Musique() {
           <li key={s}>{s}</li>
         ))}
       </ul>
-      <div aria-hidden className="mt-16 -rotate-2 space-y-2 sm:space-y-4">
+      <div aria-hidden className="mt-16 space-y-1 border-y border-line py-6 sm:space-y-2">
         <Marquee items={a} direction={1} accent="gold" />
         <Marquee items={b} direction={-1} accent="magenta" />
       </div>

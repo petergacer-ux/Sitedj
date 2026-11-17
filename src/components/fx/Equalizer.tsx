@@ -1,7 +1,7 @@
 /** Égaliseur de barres qui pulse comme une basse (CSS pur, transform uniquement). */
 export function Equalizer({ bars = 40, className = "" }: { bars?: number; className?: string }) {
   return (
-    <div aria-hidden className={`flex h-full items-end justify-center gap-[3px] sm:gap-[5px] ${className}`}>
+    <div aria-hidden className={`flex h-full items-end justify-center gap-[4px] sm:gap-[6px] ${className}`}>
       {Array.from({ length: bars }, (_, i) => {
         // pseudo-aléatoire déterministe (pas d'écart serveur / client)
         const r = ((i * 9301 + 49297) % 233280) / 233280;
@@ -19,7 +19,7 @@ export function Equalizer({ bars = 40, className = "" }: { bars?: number; classN
         return (
           <span
             key={i}
-            className="block h-full w-[3px] origin-bottom rounded-full bg-gradient-to-t from-magenta via-gold to-gold-soft opacity-90 sm:w-[5px]"
+            className="block h-full w-[2px] origin-bottom rounded-full bg-gold/70 sm:w-[3px]"
             style={style}
           />
         );

@@ -17,7 +17,7 @@ type Beam = {
 const rgba = (c: readonly number[], a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
 function makeBeams(count: number): Beam[] {
-  const palette: LightName[] = ["gold", "magenta", "gold", "cyan", "magenta", "gold", "magenta", "gold"];
+  const palette: LightName[] = ["gold", "white", "gold", "white", "gold", "white"];
   return Array.from({ length: count }, (_, i) => {
     const x = (i + 0.5) / count;
     return {
@@ -27,7 +27,7 @@ function makeBeams(count: number): Beam[] {
       phase: i * 1.7,
       amp: 0.32 + ((i * 13) % 7) / 40,
       base: (0.5 - x) * 0.9, // les lyres extérieures visent vers le centre
-      width: 0.09 + ((i * 7) % 5) / 120,
+      width: 0.07 + ((i * 7) % 5) / 160,
     };
   });
 }
@@ -37,7 +37,7 @@ function makeBeams(count: number): Beam[] {
  * Canvas 2D, rendu additif. Suit légèrement la souris.
  */
 export function StageBeams({ reduced, intensity = 1 }: { reduced: boolean; intensity?: number }) {
-  const beams = useRef<Beam[]>(makeBeams(6));
+  const beams = useRef<Beam[]>(makeBeams(4));
   const mouse = useRef({ x: 0, tx: 0, y: 0, ty: 0 });
 
   useEffect(() => {
@@ -61,10 +61,8 @@ export function StageBeams({ reduced, intensity = 1 }: { reduced: boolean; inten
 
       // Brume : nappes lumineuses qui dérivent lentement
       const haze: [LightName, number, number, number][] = [
-        ["magenta", 0.2, 0.75, 0.11],
-        ["gold", 0.75, 0.65, 0.09],
-        ["cyan", 0.55, 0.95, 0.05],
-        ["violet", 0.1, 0.35, 0.06],
+        ["gold", 0.5, 0.0, 0.07],
+        ["white", 0.3, 0.9, 0.025],
       ];
       for (let i = 0; i < haze.length; i++) {
         const [c, hx, hy, a] = haze[i];
@@ -81,7 +79,7 @@ export function StageBeams({ reduced, intensity = 1 }: { reduced: boolean; inten
       // Faisceaux
       const len = Math.hypot(w, h) * 1.15;
       const list = beams.current;
-      const count = w < 640 ? 4 : list.length;
+      const count = w < 640 ? 3 : list.length;
       for (let i = 0; i < count; i++) {
         const b = list[i];
         const ox = (count === list.length ? b.x : (i + 0.5) / count) * w;
@@ -90,9 +88,9 @@ export function StageBeams({ reduced, intensity = 1 }: { reduced: boolean; inten
         const angle = Math.PI / 2 + b.base + sweep - m.x * 0.28 * (1 - Math.abs(b.base));
         const spread = b.width * (1 + m.y * 0.15);
         const col = lightRGB[b.color];
-        const pulse = 0.75 + 0.25 * Math.sin(t * 2.1 + b.phase);
+        const pulse = 0.85 + 0.15 * Math.sin(t * 1.2 + b.phase);
 
-        for (const [k, alpha] of [[2.4, 0.07], [1, 0.16], [0.35, 0.22]] as const) {
+        for (const [k, alpha] of [[2.2, 0.035], [0.9, 0.07], [0.3, 0.1]] as const) {
           const a1 = angle - spread * k;
           const a2 = angle + spread * k;
           const g = ctx.createLinearGradient(ox, oy, ox + Math.cos(angle) * len, oy + Math.sin(angle) * len);
@@ -114,7 +112,7 @@ export function StageBeams({ reduced, intensity = 1 }: { reduced: boolean; inten
           const fy = h * 0.92;
           const r = w * 0.09;
           const g = ctx.createRadialGradient(hitX, fy, 0, hitX, fy, r);
-          g.addColorStop(0, rgba(col, 0.22 * pulse * intensity));
+          g.addColorStop(0, rgba(col, 0.08 * pulse * intensity));
           g.addColorStop(1, rgba(col, 0));
           ctx.save();
           ctx.translate(hitX, fy);
@@ -127,7 +125,7 @@ export function StageBeams({ reduced, intensity = 1 }: { reduced: boolean; inten
 
         // Source lumineuse (la lyre)
         const sg = ctx.createRadialGradient(ox, 0, 0, ox, 0, 46);
-        sg.addColorStop(0, rgba(lightRGB.white, 0.75 * intensity));
+        sg.addColorStop(0, rgba(lightRGB.white, 0.45 * intensity));
         sg.addColorStop(0.25, rgba(col, 0.45 * intensity));
         sg.addColorStop(1, rgba(col, 0));
         ctx.fillStyle = sg;

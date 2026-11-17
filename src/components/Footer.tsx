@@ -5,8 +5,7 @@ import { Logo } from "@/components/ui/Logo";
 export function Footer() {
   return (
     <footer className="relative border-t border-line bg-night-950">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
-      <div className="container-stage grid gap-12 py-16 md:grid-cols-[1.4fr_1fr_1fr]">
+            <div className="container-stage grid gap-12 py-16 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <Logo />
           <p className="mt-5 max-w-sm text-sm text-ink-muted">« {entreprise.slogan} »<br />{piedDePage.texte}</p>

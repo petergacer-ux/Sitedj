@@ -34,7 +34,7 @@ export function Header() {
       </a>
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-500 ${
-          scrolled || open ? "border-b border-line bg-night-950/70 backdrop-blur-xl" : "border-b border-transparent"
+          scrolled || open ? "border-b border-line bg-night-950/80 backdrop-blur-md" : "border-b border-transparent"
         }`}
       >
         <div className="container-stage flex h-16 items-center justify-between gap-6 sm:h-20">
@@ -66,9 +66,9 @@ export function Header() {
             </a>
             <Link
               href={hero.ctaPrincipal.href}
-              className="hidden rounded-full bg-gold px-5 py-2.5 font-display text-[0.7rem] font-medium uppercase tracking-[0.14em] text-night-950 shadow-glow-gold transition-colors hover:bg-gold-soft sm:inline-flex"
+              className="hidden rounded-full bg-ink px-5 py-2 text-sm font-medium text-night-950 transition-colors hover:bg-gold sm:inline-flex"
             >
-              Devis
+              Demander un devis
             </Link>
             <button
               type="button"
@@ -76,7 +76,7 @@ export function Header() {
               aria-controls="menu-mobile"
               aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
               onClick={() => setOpen((o) => !o)}
-              className="relative grid size-11 place-items-center rounded-full glass lg:hidden"
+              className="relative grid size-11 place-items-center rounded-full border border-line lg:hidden"
             >
               <span className={`absolute h-px w-5 bg-ink transition-transform duration-300 ${open ? "rotate-45" : "-translate-y-[4px]"}`} />
               <span className={`absolute h-px w-5 bg-ink transition-transform duration-300 ${open ? "-rotate-45" : "translate-y-[4px]"}`} />
@@ -95,8 +95,7 @@ export function Header() {
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-40 flex flex-col bg-night-950/95 px-6 pb-10 pt-28 backdrop-blur-xl lg:hidden"
           >
-            <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_40%_at_80%_10%,rgb(var(--rgb-magenta)/.25),transparent),radial-gradient(60%_40%_at_10%_90%,rgb(var(--rgb-gold)/.18),transparent)]" />
-            <nav aria-label="Menu mobile" className="relative">
+                        <nav aria-label="Menu mobile" className="relative">
               <ul className="flex flex-col gap-2">
                 {[...navigation, { label: hero.ctaSecondaire.label, href: hero.ctaSecondaire.href }].map((n, i) => (
                   <motion.li
@@ -108,7 +107,7 @@ export function Header() {
                     <Link
                       href={n.href}
                       onClick={() => setOpen(false)}
-                      className="block py-2 font-display text-3xl font-semibold text-ink"
+                      className="block py-2 font-display text-3xl font-medium tracking-[-0.03em] text-ink"
                     >
                       {n.label}
                     </Link>
@@ -117,7 +116,7 @@ export function Header() {
               </ul>
             </nav>
             <div className="relative mt-auto flex flex-col gap-3 text-ink-muted">
-              <a href={entreprise.telephoneLien} className="flex items-center gap-2 text-lg text-gold">
+              <a href={entreprise.telephoneLien} className="flex items-center gap-2 text-lg text-ink">
                 <PhoneIcon /> {entreprise.telephone}
               </a>
               <a href={`mailto:${entreprise.email}`}>{entreprise.email}</a>

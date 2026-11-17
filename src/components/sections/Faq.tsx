@@ -20,8 +20,8 @@ function Item({ q, r, defaultOpen }: { q: string; r: string; defaultOpen?: boole
           onClick={() => setOpen((o) => !o)}
           className="group flex w-full items-center justify-between gap-6 py-6 text-left"
         >
-          <span className="font-display text-lg font-medium transition-colors group-hover:text-gold sm:text-xl">{q}</span>
-          <span aria-hidden className={`relative grid size-9 shrink-0 place-items-center rounded-full border border-line transition-all duration-300 ${open ? "rotate-45 border-gold bg-gold text-night-950" : "text-gold"}`}>
+          <span className="font-display text-lg font-medium tracking-[-0.02em] transition-colors group-hover:text-gold sm:text-xl">{q}</span>
+          <span aria-hidden className={`relative grid size-9 shrink-0 place-items-center rounded-full border border-line transition-all duration-300 ${open ? "rotate-45 border-gold text-gold" : "text-ink-muted"}`}>
             <span className="absolute h-px w-3.5 bg-current" />
             <span className="absolute h-3.5 w-px bg-current" />
           </span>

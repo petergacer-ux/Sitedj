@@ -79,7 +79,7 @@ export function Deroule() {
             style={{
               opacity: "calc(var(--lux) * 1)",
               background:
-                "radial-gradient(70% 60% at 50% 110%, rgb(var(--rgb-magenta) / .35), transparent 70%), radial-gradient(50% 50% at 15% 0%, rgb(var(--rgb-gold) / .22), transparent 70%), radial-gradient(50% 50% at 90% 10%, rgb(var(--rgb-cyan) / .14), transparent 70%)",
+                "radial-gradient(70% 60% at 50% 110%, rgb(var(--rgb-gold) / .14), transparent 70%), radial-gradient(50% 50% at 50% 0%, rgb(var(--rgb-white) / .05), transparent 70%)",
             }}
           />
           <div
@@ -87,7 +87,7 @@ export function Deroule() {
             style={{
               opacity: "calc((var(--lux) - .75) * 4)",
               background:
-                "conic-gradient(from 200deg at 20% -10%, transparent 0 8deg, rgb(var(--rgb-gold) / .25) 12deg, transparent 18deg 60deg, rgb(var(--rgb-magenta) / .22) 66deg, transparent 72deg), conic-gradient(from 130deg at 80% -10%, transparent 0 10deg, rgb(var(--rgb-cyan) / .18) 15deg, transparent 21deg 50deg, rgb(var(--rgb-gold) / .2) 55deg, transparent 62deg)",
+                "conic-gradient(from 200deg at 20% -10%, transparent 0 8deg, rgb(var(--rgb-gold) / .1) 12deg, transparent 18deg 60deg, rgb(var(--rgb-white) / .06) 66deg, transparent 72deg), conic-gradient(from 130deg at 80% -10%, transparent 0 10deg, rgb(var(--rgb-white) / .06) 15deg, transparent 21deg 50deg, rgb(var(--rgb-gold) / .1) 55deg, transparent 62deg)",
             }}
           />
         </div>
@@ -97,10 +97,10 @@ export function Deroule() {
         <SectionHeading titleId="deroule-titre" eyebrow={deroule.surTitre} title={deroule.titre} intro={deroule.intro} align="center" />
 
         {/* Variateur de lumière */}
-        <div aria-hidden className="mx-auto mt-10 flex max-w-xs items-center gap-3 text-[0.65rem] uppercase tracking-[0.25em] text-ink-faint">
+        <div aria-hidden className="mx-auto mt-10 flex max-w-xs items-center gap-3 text-xs text-ink-faint">
           <span>Lumière</span>
           <div className="h-1 flex-1 overflow-hidden rounded-full bg-line">
-            <div className="h-full origin-left rounded-full bg-gradient-to-r from-gold to-magenta" style={{ transform: "scaleX(var(--lux))" }} />
+            <div className="h-full origin-left rounded-full bg-gold" style={{ transform: "scaleX(var(--lux))" }} />
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export function Deroule() {
           <div
             ref={line}
             aria-hidden
-            className="absolute bottom-0 left-[18px] top-0 w-[3px] origin-top scale-y-0 rounded-full bg-gradient-to-b from-gold via-magenta to-gold-soft shadow-[0_0_16px_rgb(var(--rgb-gold)/.7)] md:left-1/2 md:-translate-x-1/2"
+            className="absolute bottom-0 left-[18.5px] top-0 w-[2px] origin-top scale-y-0 rounded-full bg-gold md:left-1/2 md:-translate-x-1/2"
           />
 
           {deroule.etapes.map((e, i) => {
@@ -126,10 +126,10 @@ export function Deroule() {
                 {/* Nœud */}
                 <span
                   aria-hidden
-                  className="absolute left-[8px] top-1 grid size-6 place-items-center rounded-full border border-line bg-night-900 transition-all duration-500 group-data-[on=1]:border-gold group-data-[on=1]:bg-gold group-data-[on=1]:shadow-glow-gold md:left-1/2 md:-translate-x-1/2"
+                  className="absolute left-[8px] top-1 grid size-6 place-items-center rounded-full border border-line bg-night-900 transition-all duration-500 group-data-[on=1]:border-gold group-data-[on=1]:bg-gold md:left-1/2 md:-translate-x-1/2"
                 >
                   <span className="size-1.5 rounded-full bg-ink-faint transition-colors group-data-[on=1]:bg-night-950" />
-                  {final && <span className="absolute inset-0 rounded-full border border-magenta opacity-0 group-data-[on=1]:animate-[pulse-ring_1.6s_ease-out_infinite]" />}
+                  {final && <span className="absolute inset-0 rounded-full border border-gold opacity-0 group-data-[on=1]:animate-[pulse-ring_1.6s_ease-out_infinite]" />}
                 </span>
 
                 <div
@@ -137,12 +137,12 @@ export function Deroule() {
                     right ? "md:col-start-2" : "md:text-right"
                   }`}
                 >
-                  <span className="font-display text-xs uppercase tracking-[0.3em] text-gold">Acte {String(i + 1).padStart(2, "0")}</span>
+                  <span className="font-serif text-lg italic text-gold">{String(i + 1).padStart(2, "0")}</span>
                   <h3
                     className={`mt-2 font-display font-semibold tracking-[-0.01em] transition-[color,text-shadow] duration-700 ${
                       final
-                        ? "text-[clamp(2rem,5vw,3.5rem)] leading-none group-data-[on=1]:text-gradient"
-                        : "text-2xl sm:text-3xl group-data-[on=1]:text-ink text-ink-muted"
+                        ? "text-[clamp(2rem,5vw,3.5rem)] leading-none tracking-[-0.04em] group-data-[on=1]:text-gold"
+                        : "text-2xl tracking-[-0.03em] sm:text-3xl group-data-[on=1]:text-ink text-ink-muted"
                     }`}
                   >
                     {e.titre}

@@ -1,13 +1,13 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 const control =
-  "w-full rounded-md border border-line bg-night-950/60 px-4 py-3.5 text-base text-ink placeholder:text-ink-faint transition-[border-color,box-shadow] duration-200 hover:border-white/20 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/25";
+  "w-full rounded-md border border-line bg-transparent px-4 py-3.5 text-base text-ink placeholder:text-ink-faint transition-[border-color,box-shadow] duration-200 hover:border-white/20 focus:border-gold focus:outline-none focus:ring-0";
 
 export function Label({ children, htmlFor, required }: { children: ReactNode; htmlFor: string; required?: boolean }) {
   return (
     <label htmlFor={htmlFor} className="mb-2 block text-sm font-medium text-ink/85">
       {children}
-      {required && <span className="ml-1 text-magenta-soft" aria-hidden>*</span>}
+      {required && <span className="ml-1 text-gold" aria-hidden>*</span>}
     </label>
   );
 }
@@ -50,7 +50,7 @@ export function Textarea({ label, id, className = "", ...props }: TextareaHTMLAt
 /** Puce cochable (checkbox stylée). */
 export function Chip({ label, checked, onChange, name }: { label: string; checked: boolean; onChange: (v: boolean) => void; name?: string }) {
   return (
-    <label className={`inline-flex cursor-pointer select-none items-center gap-2 rounded-full border px-4 py-2.5 text-sm transition-all duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold ${checked ? "border-gold bg-gold/15 text-gold-soft shadow-[0_0_20px_rgb(var(--rgb-gold)/.2)]" : "border-line text-ink-muted hover:border-white/25 hover:text-ink"}`}>
+    <label className={`inline-flex cursor-pointer select-none items-center gap-2 rounded-full border px-4 py-2.5 text-sm transition-all duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold ${checked ? "border-gold/70 bg-gold/10 text-ink" : "border-line text-ink-muted hover:border-white/25 hover:text-ink"}`}>
       <input type="checkbox" name={name} className="sr-only" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span aria-hidden className={`grid size-4 place-items-center rounded-full border transition-colors ${checked ? "border-gold bg-gold text-night-950" : "border-ink-faint"}`}>
         {checked && <svg viewBox="0 0 24 24" className="size-3" fill="none" stroke="currentColor" strokeWidth="3"><path d="m5 12 5 5 9-10" /></svg>}

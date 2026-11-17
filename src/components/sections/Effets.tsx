@@ -9,6 +9,7 @@ import { useReducedMotion } from "@/lib/hooks";
 import type { LightName } from "@/styles/tokens";
 
 const AMBIANCES: LightName[] = ["gold", "magenta", "cyan", "violet"];
+// (l'aperçu « Éclairage » garde ses couleurs : c'est justement l'effet présenté)
 
 const icons: Record<EffetCarte["effet"], React.ReactNode> = {
   fumee: <path d="M4 16c2-2 4 2 6 0s4 2 6 0 4 2 4 2M4 12c2-2 4 2 6 0s4 2 6 0 4 2 4 2M7 8c1.5-1.5 3 1.5 4.5 0S14.5 9.5 16 8" />,
@@ -58,21 +59,20 @@ function EffetCard({
         }}
         data-on={emitting ? 1 : 0}
         data-cursor
-        className={`group relative isolate flex h-full cursor-pointer flex-col justify-end overflow-hidden rounded-lg border border-line bg-night-900/80 p-6 transition-[border-color,box-shadow,transform] duration-500 ease-stage data-[on=1]:-translate-y-1 data-[on=1]:border-gold/40 data-[on=1]:shadow-glow-gold sm:p-7 ${
+        className={`group relative isolate flex h-full cursor-pointer flex-col justify-end overflow-hidden rounded-lg border border-line bg-night-900/50 p-6 transition-[border-color,box-shadow,transform] duration-500 ease-stage data-[on=1]:border-gold/40 sm:p-7 ${
           big ? "min-h-[300px] lg:min-h-[100%]" : "min-h-[230px]"
         }`}
       >
-        <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(90%_60%_at_50%_0%,rgb(var(--rgb-gold)/.08),transparent)] opacity-0 transition-opacity duration-500 group-data-[on=1]:opacity-100" />
-        <div className="absolute inset-0 -z-10">
+                <div className="absolute inset-0 -z-10">
           <EffectCanvas effet={carte.effet} emitting={emitting} running={running} reduced={reduced} />
         </div>
 
-        <span className="mb-auto grid size-12 place-items-center rounded-full border border-gold/30 bg-night-950/50 text-gold backdrop-blur transition-colors group-data-[on=1]:bg-gold group-data-[on=1]:text-night-950">
+        <span className="mb-auto grid size-11 place-items-center rounded-full border border-line text-gold transition-colors group-data-[on=1]:border-gold/60">
           <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             {icons[carte.effet]}
           </svg>
         </span>
-        <h3 className={`mt-10 font-display [text-shadow:0_2px_12px_rgb(0_0_0/.6)] font-semibold leading-tight ${big ? "text-2xl sm:text-3xl" : "text-xl"}`}>{carte.titre}</h3>
+        <h3 className={`mt-10 font-display [text-shadow:0_2px_12px_rgb(0_0_0/.6)] font-semibold leading-tight tracking-[-0.02em] ${big ? "text-2xl sm:text-3xl" : "text-xl"}`}>{carte.titre}</h3>
         <p className="mt-2 max-w-sm text-sm text-ink-muted text-pretty">{carte.texte}</p>
         <button
           type="button"
@@ -81,7 +81,7 @@ function EffetCard({
             e.stopPropagation();
             set(!emitting);
           }}
-          className="mt-4 self-start rounded-full border border-line px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-ink-faint transition-colors hover:text-gold focus-visible:text-gold"
+          className="mt-4 self-start text-xs text-ink-faint underline decoration-line underline-offset-4 transition-colors hover:text-ink focus-visible:text-ink"
         >
           {emitting ? "Arrêter l'aperçu" : "Voir l'effet"}
         </button>
@@ -112,7 +112,7 @@ export function Effets() {
             key={c}
             className="absolute inset-0 transition-opacity duration-[1200ms]"
             style={{
-              opacity: (light ? (i === amb ? 1 : 0) : i === 0 ? 0.45 : 0),
+              opacity: (light ? (i === amb ? 0.8 : 0) : 0),
               background: `radial-gradient(60% 50% at 50% 0%, rgb(var(--rgb-${c}) / .28), transparent 70%), radial-gradient(40% 40% at 100% 100%, rgb(var(--rgb-${c}) / .18), transparent 70%)`,
             }}
           />
@@ -122,8 +122,8 @@ export function Effets() {
       <div className="container-stage">
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <SectionHeading titleId="effets-titre" eyebrow={effets.surTitre} title={effets.titre} intro={effets.intro} />
-          <p className="hidden shrink-0 items-center gap-2 text-xs uppercase tracking-[0.25em] text-ink-faint md:flex">
-            <span className="size-2 animate-pulse rounded-full bg-magenta" /> {effets.indication}
+          <p className="hidden shrink-0 items-center gap-2 text-xs text-ink-faint md:flex">
+            <span className="size-1.5 animate-pulse rounded-full bg-gold" /> {effets.indication}
           </p>
         </div>
 

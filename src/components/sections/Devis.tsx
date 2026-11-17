@@ -43,30 +43,29 @@ export function Devis() {
 
   return (
     <section id="devis" aria-labelledby="devis-titre" className="relative isolate section-pad overflow-hidden">
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_20%_0%,rgb(var(--rgb-gold)/.14),transparent_70%),radial-gradient(50%_60%_at_100%_100%,rgb(var(--rgb-magenta)/.18),transparent_70%)]" />
-      <div className="container-stage grid gap-14 lg:grid-cols-[1fr_1.25fr] lg:gap-20">
+            <div className="container-stage grid gap-14 lg:grid-cols-[1fr_1.25fr] lg:gap-20">
         <div>
           <SectionHeading titleId="devis-titre" eyebrow={devis.surTitre} title={devis.titre} intro={devis.intro} />
 
           <FadeIn delay={0.1}>
             <ul className="mt-10 space-y-3">
               <li>
-                <a href={entreprise.telephoneLien} className="group glass flex items-center gap-4 rounded-lg p-5 transition-shadow hover:shadow-glow-gold">
-                  <span className="grid size-11 place-items-center rounded-full bg-gold text-night-950"><PhoneIcon /></span>
+                <a href={entreprise.telephoneLien} className="group flex items-center gap-4 rounded-lg border border-line p-5 transition-colors hover:border-white/25">
+                  <span className="grid size-11 place-items-center rounded-full border border-line text-gold"><PhoneIcon /></span>
                   <span>
-                    <span className="block text-xs uppercase tracking-[0.2em] text-ink-faint">Téléphone</span>
-                    <span className="font-display text-xl font-semibold group-hover:text-gold">{entreprise.telephone}</span>
+                    <span className="block text-xs text-ink-faint">Téléphone</span>
+                    <span className="font-display text-xl font-semibold tracking-[-0.02em]">{entreprise.telephone}</span>
                   </span>
                 </a>
               </li>
               <li>
-                <a href={`mailto:${entreprise.email}`} className="group glass flex items-center gap-4 rounded-lg p-5 transition-shadow hover:shadow-glow-magenta">
-                  <span className="grid size-11 place-items-center rounded-full bg-magenta text-ink">
+                <a href={`mailto:${entreprise.email}`} className="group flex items-center gap-4 rounded-lg border border-line p-5 transition-colors hover:border-white/25">
+                  <span className="grid size-11 place-items-center rounded-full border border-line text-gold">
                     <svg aria-hidden viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 6h18v12H3z" /><path d="m3 7 9 6 9-6" /></svg>
                   </span>
                   <span>
-                    <span className="block text-xs uppercase tracking-[0.2em] text-ink-faint">E-mail</span>
-                    <span className="font-display text-lg font-semibold break-all group-hover:text-magenta-soft">{entreprise.email}</span>
+                    <span className="block text-xs text-ink-faint">E-mail</span>
+                    <span className="font-display text-lg font-semibold tracking-[-0.02em] break-all">{entreprise.email}</span>
                   </span>
                 </a>
               </li>
@@ -75,13 +74,13 @@ export function Devis() {
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresse)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group glass flex items-center gap-4 rounded-lg p-5 transition-shadow hover:shadow-glow-cyan"
+                  className="group flex items-center gap-4 rounded-lg border border-line p-5 transition-colors hover:border-white/25"
                 >
-                  <span className="grid size-11 place-items-center rounded-full bg-cyan text-night-950">
+                  <span className="grid size-11 place-items-center rounded-full border border-line text-gold">
                     <svg aria-hidden viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z" /><circle cx="12" cy="9" r="2.5" /></svg>
                   </span>
                   <span>
-                    <span className="block text-xs uppercase tracking-[0.2em] text-ink-faint">Adresse</span>
+                    <span className="block text-xs text-ink-faint">Adresse</span>
                     <address className="not-italic text-ink/90">
                       {entreprise.adresse.rue}<br />
                       {entreprise.adresse.codePostal} {entreprise.adresse.ville} ({entreprise.adresse.departement})
@@ -93,10 +92,10 @@ export function Devis() {
           </FadeIn>
 
           <FadeIn delay={0.2}>
-            <div className="mt-8 rounded-lg border border-dashed border-gold/40 p-6">
-              <p className="font-display text-lg font-semibold text-gold">{devis.encartQuestionnaire.titre}</p>
+            <div className="mt-8 rounded-lg bg-white/[0.03] p-6">
+              <p className="font-serif text-2xl italic text-gold">{devis.encartQuestionnaire.titre}</p>
               <p className="mt-2 text-sm text-ink-muted">{devis.encartQuestionnaire.texte}</p>
-              <Link href={hero.ctaSecondaire.href} className="mt-4 inline-flex items-center gap-2 font-display text-xs uppercase tracking-[0.18em] text-gold hover:underline underline-offset-8">
+              <Link href={hero.ctaSecondaire.href} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-ink underline decoration-gold/50 underline-offset-[6px] hover:decoration-gold">
                 {devis.encartQuestionnaire.bouton} →
               </Link>
             </div>
@@ -104,7 +103,7 @@ export function Devis() {
         </div>
 
         <FadeIn delay={0.1}>
-          <form onSubmit={onSubmit} className="glass relative rounded-xl p-6 shadow-soft sm:p-10" noValidate={false}>
+          <form onSubmit={onSubmit} className="relative rounded-xl border border-line p-6 sm:p-10" noValidate={false}>
             <div className="grid gap-5 sm:grid-cols-2">
               <Input id="nom" label="Nom et prénom" required autoComplete="name" />
               <Input id="tel" label="Téléphone" type="tel" autoComplete="tel" inputMode="tel" />
@@ -135,7 +134,7 @@ export function Devis() {
                   <a className="text-gold underline" href={`mailto:${entreprise.email}`}>{entreprise.email}</a>.
                 </p>
               )}
-              {status === "error" && <p className="text-magenta-soft">{formulaires.messageErreur}</p>}
+              {status === "error" && <p className="text-gold">{formulaires.messageErreur}</p>}
             </div>
           </form>
         </FadeIn>

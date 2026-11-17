@@ -12,10 +12,10 @@ import { PhotoSlot } from "@/components/ui/PhotoSlot";
 gsap.registerPlugin(ScrollTrigger);
 
 const ambiance: Record<CouleurAmbiance, { rgb: string; text: string; ring: string }> = {
-  gold: { rgb: "var(--rgb-gold)", text: "text-gold", ring: "shadow-glow-gold" },
-  magenta: { rgb: "var(--rgb-magenta)", text: "text-magenta-soft", ring: "shadow-glow-magenta" },
-  cyan: { rgb: "var(--rgb-cyan)", text: "text-cyan", ring: "shadow-glow-cyan" },
-  violet: { rgb: "var(--rgb-violet)", text: "text-violet", ring: "shadow-glow-magenta" },
+  gold: { rgb: "var(--rgb-gold)", text: "text-gold", ring: "" },
+  magenta: { rgb: "var(--rgb-white)", text: "text-gold", ring: "" },
+  cyan: { rgb: "var(--rgb-gold)", text: "text-gold", ring: "" },
+  violet: { rgb: "var(--rgb-white)", text: "text-gold", ring: "" },
 };
 
 export function Prestations() {
@@ -85,7 +85,7 @@ export function Prestations() {
                 key={p.id}
                 id={`prestation-${p.id}`}
                 data-presta
-                className="group relative isolate overflow-hidden rounded-xl border border-line bg-night-900 lg:motion-safe:h-[72vh] lg:motion-safe:w-[min(78vw,64rem)] lg:motion-safe:shrink-0"
+                className="group relative isolate overflow-hidden rounded-xl border border-line bg-night-900/60 lg:motion-safe:h-[72vh] lg:motion-safe:w-[min(78vw,64rem)] lg:motion-safe:shrink-0"
               >
                 {/* Lumière d'ambiance propre à la carte */}
                 <div
@@ -93,32 +93,31 @@ export function Prestations() {
                   aria-hidden
                   className="absolute inset-0 -z-10"
                   style={{
-                    background: `radial-gradient(80% 70% at 85% 10%, rgb(${a.rgb} / .35), transparent 60%), radial-gradient(60% 50% at 0% 100%, rgb(${a.rgb} / .18), transparent 70%)`,
+                    background: `radial-gradient(70% 60% at 0% 0%, rgb(${a.rgb} / .07), transparent 70%)`,
                   }}
                 />
-                <div aria-hidden className="absolute -top-1/2 right-[18%] -z-10 h-[160%] w-40 rotate-[18deg] opacity-40 blur-2xl transition-opacity duration-700 group-hover:opacity-70" style={{ background: `linear-gradient(to bottom, rgb(${a.rgb} / .55), transparent 75%)` }} />
 
                 <div className="grid h-full gap-0 lg:grid-cols-[1.05fr_1fr]">
                   <div className="flex flex-col justify-between gap-8 p-7 sm:p-10 lg:p-14">
                     <div>
-                      <span className={`font-display text-sm ${a.text}`}>0{i + 1} / 0{prestations.liste.length}</span>
-                      <h3 className="mt-4 font-display text-[clamp(2rem,4.4vw,3.75rem)] font-semibold leading-[0.98] tracking-[-0.02em]">
+                      <span className="font-serif text-lg italic text-gold">0{i + 1}<span className="text-ink-faint"> / 0{prestations.liste.length}</span></span>
+                      <h3 className="mt-4 font-display text-[clamp(2rem,4.2vw,3.5rem)] font-semibold leading-[1] tracking-[-0.04em]">
                         {p.titre}
                       </h3>
-                      <p className={`mt-4 font-display text-lg font-light italic ${a.text}`}>{p.accroche}</p>
+                      <p className="mt-4 font-serif text-xl italic text-ink/80">{p.accroche}</p>
                       <p className="mt-5 max-w-md text-ink-muted text-pretty">{p.texte}</p>
                     </div>
                     <div>
                       <ul className="flex flex-wrap gap-2">
                         {p.points.map((pt) => (
-                          <li key={pt} className="rounded-full border border-line bg-white/[0.03] px-3.5 py-1.5 text-sm text-ink/85">
+                          <li key={pt} className="rounded-full border border-line px-3.5 py-1.5 text-sm text-ink-muted">
                             {pt}
                           </li>
                         ))}
                       </ul>
                       <Link
                         href="/#devis"
-                        className={`mt-8 inline-flex items-center gap-2 font-display text-xs uppercase tracking-[0.18em] ${a.text} hover:underline underline-offset-8`}
+                        className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-ink underline decoration-gold/50 underline-offset-[6px] hover:decoration-gold"
                       >
                         Demander un devis {p.titre.toLowerCase()} →
                       </Link>
@@ -136,7 +135,7 @@ export function Prestations() {
         <div aria-hidden className="absolute inset-x-0 bottom-8 hidden lg:motion-safe:block">
           <div className="container-stage">
             <div className="h-px w-full overflow-hidden bg-line">
-              <div ref={bar} className="h-full origin-left scale-x-0 bg-gradient-to-r from-gold via-magenta to-cyan" />
+              <div ref={bar} className="h-full origin-left scale-x-0 bg-gold" />
             </div>
           </div>
         </div>

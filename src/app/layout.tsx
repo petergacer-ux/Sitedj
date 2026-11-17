@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Unbounded, Manrope } from "next/font/google";
+import { Inter_Tight, Inter, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { tokensToCss, colors } from "@/styles/tokens";
 import { entreprise } from "@/content/site";
@@ -10,8 +10,9 @@ import { Cursor } from "@/components/Cursor";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-const display = Unbounded({ subsets: ["latin"], variable: "--font-display", weight: ["300", "400", "500", "600", "700"], display: "swap" });
-const body = Manrope({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const display = Inter_Tight({ subsets: ["latin"], variable: "--font-display", weight: ["400", "500", "600", "700"], display: "swap" });
+const body = Inter({ subsets: ["latin"], variable: "--font-body", display: "swap" });
+const serif = Instrument_Serif({ subsets: ["latin"], variable: "--font-serif", weight: "400", style: ["normal", "italic"], display: "swap" });
 
 const description = `${entreprise.nom} — DJ animateur à ${entreprise.adresse.ville} (${entreprise.adresse.departement}). ${entreprise.metiers.join(", ")} pour mariages, anniversaires, soirées d'entreprise et cocktails. Demandez votre devis.`;
 
@@ -41,7 +42,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${display.variable} ${body.variable}`}>
+    <html lang="fr" className={`${display.variable} ${body.variable} ${serif.variable}`}>
       <head>
         <style dangerouslySetInnerHTML={{ __html: tokensToCss() }} />
       </head>

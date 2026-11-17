@@ -95,7 +95,7 @@ export const navigation = [
 
 export const hero = {
   surTitre: "DJ animateur · Val-d'Oise",
-  titre: ["MILLENIUM", "DJ"],
+  titre: ["Millenium", "DJ"],
   accroche: "Le partenaire de vos réceptions",
   sousTitre:
     "Animation, sonorisation et éclairage pour vos mariages, anniversaires et soirées d'entreprise.",
