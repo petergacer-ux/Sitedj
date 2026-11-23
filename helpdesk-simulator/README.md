@@ -25,6 +25,7 @@ Ouvrez ensuite l'adresse affichée (par défaut <http://localhost:5173>).
 | `npm test` | tests unitaires (Vitest) |
 | `npm run build` | vérification TypeScript + build de production dans `dist/` |
 | `npm run preview` | sert le build de production |
+| `npm run build:single` | version en **un seul fichier HTML** (`dist-single/helpdesk-simulator.html`), à héberger n'importe où |
 
 ## 🎮 Commandes
 
@@ -40,6 +41,22 @@ Ouvrez ensuite l'adresse affichée (par défaut <http://localhost:5173>).
 | **Échap** | fermer une fenêtre / quitter une vue rapprochée / menu pause |
 | **Molette** | en vue rapprochée de la baie : monter / descendre |
 | **1 à 9** | choisir une réponse dans un dialogue |
+
+### Sur iPad / tablette 📱
+
+Le jeu détecte l'écran tactile et affiche des commandes adaptées (pas besoin de souris) :
+
+| Geste / bouton | Action |
+|---|---|
+| **Moitié gauche** : poser le doigt et glisser | joystick de déplacement (pousser à fond = courir) |
+| **Moitié droite** : glisser | regarder autour de soi |
+| **Bouton bleu** | interagir avec l'objet visé (le bouton affiche l'action, ex. « Ouvrir la porte ») |
+| **⬇ Se baisser** · **🗺️ Plan** · **❚❚ Pause** | comme C, M et Échap |
+| **✕** des fenêtres | fermer et reprendre |
+| Vue baie : glisser verticalement | monter / descendre ; toucher un équipement pour l'identifier |
+
+Un clavier Bluetooth branché sur l'iPad fonctionne aussi (ZQSD + E). Comme `npm` ne tourne pas sur iPad,
+jouez à la version hébergée (voir `npm run build:single`) plutôt qu'avec `npm run dev`.
 
 > ⚠️ Préférez **C** à Ctrl pour se baisser : dans certains navigateurs, Ctrl + W ferme l'onglet !
 

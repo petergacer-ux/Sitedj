@@ -30,7 +30,7 @@ export class AppWindow {
     win.style.width = opts.width ?? 'min(1100px, 94vw)';
     win.style.height = opts.height ?? 'min(680px, 88vh)';
     const bar = el('div', { class: 'app-titlebar' });
-    bar.innerHTML = `<span class="app-title">${opts.icon ?? ''} ${escapeHtml(opts.title)}</span><span class="app-hint">Échap pour fermer</span>`;
+    bar.innerHTML = `<span class="app-title">${opts.icon ?? ''} ${escapeHtml(opts.title)}</span><span class="app-hint kbd-only">Échap pour fermer</span>`;
     const close = el('button', { class: 'app-close', title: 'Fermer (Échap)' }, ['✕']);
     close.addEventListener('click', () => this.close());
     bar.append(close);

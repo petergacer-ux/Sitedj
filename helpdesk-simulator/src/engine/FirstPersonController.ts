@@ -42,6 +42,10 @@ export class FirstPersonController {
   private bobAmount = 0;
   private tween: Tween | null = null;
   private savedPose: { pos: THREE.Vector3; quat: THREE.Quaternion } | null = null;
+  /** Déplacement analogique venant du joystick tactile (x = droite, y = avant). */
+  virtualMove = { x: 0, y: 0 };
+  /** Sensibilité appliquée au regard tactile. */
+  touchSensitivity = 1;
   /** true pendant une vue rapprochée (écran, baie) : le joueur ne bouge plus. */
   focused = false;
 
@@ -58,6 +62,18 @@ export class FirstPersonController {
 
   set sensitivity(v: number) {
     this.controls.pointerSpeed = v;
+    this.touchSensitivity = v;
+  }
+
+  /** Regard au doigt : dx, dy en pixels glissés. */
+  look(dx: number, dy: number): void {
+    if (this.tween || this.focused) return;
+    const e = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
+    const k = 0.0045 * this.touchSensitivity;
+    e.y -= dx * k;
+    e.x = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, e.x - dy * k));
+    e.z = 0;
+    this.camera.quaternion.setFromEuler(e);
   }
 
   get isLocked(): boolean {
@@ -106,18 +122,19 @@ export class FirstPersonController {
     const targetEye = this.crouching ? CROUCH_EYE : STAND_EYE;
     this.eye += (targetEye - this.eye) * Math.min(1, dt * 10);
 
-    let fwd = 0;
-    let right = 0;
+    let fwd = this.virtualMove.y;
+    let right = this.virtualMove.x;
     if (this.keys.has('KeyW') || this.keys.has('ArrowUp')) fwd += 1;
     if (this.keys.has('KeyS') || this.keys.has('ArrowDown')) fwd -= 1;
     if (this.keys.has('KeyD') || this.keys.has('ArrowRight')) right += 1;
     if (this.keys.has('KeyA') || this.keys.has('ArrowLeft')) right -= 1;
-    const moving = fwd !== 0 || right !== 0;
-    const running = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight');
-    const speed = (this.crouching ? CROUCH_SPEED : running ? RUN : WALK) * this.speedMultiplier;
+    const len = Math.hypot(fwd, right);
+    const moving = len > 0.01;
+    // Joystick tactile poussé à fond = course.
+    const running = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || Math.hypot(this.virtualMove.x, this.virtualMove.y) > 0.95;
+    const speed = (this.crouching ? CROUCH_SPEED : running ? RUN : WALK) * this.speedMultiplier * Math.min(1, len);
 
     if (moving) {
-      const len = Math.hypot(fwd, right);
       const yaw = this.yaw;
       // Avant = -z dans le repère caméra.
       const sin = Math.sin(yaw);

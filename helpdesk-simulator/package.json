@@ -3,14 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Simulateur de technicien helpdesk / support IT en 3D à la première personne",
+  "description": "Simulateur de technicien helpdesk / support IT en 3D \u00e0 la premi\u00e8re personne",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:single": "node scripts/build-single.mjs"
   },
   "dependencies": {
     "three": "^0.187.0"

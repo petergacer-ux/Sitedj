@@ -36,7 +36,15 @@ export class Menus {
           <button class="btn" data-act="continue">Continuer la partie sauvegardée</button>
           <button class="btn" data-act="options">Options</button>
         </div>
-        <div class="controls-grid">
+        <div class="controls-grid touch-only">
+          <div>👈 Moitié gauche : joystick pour marcher (à fond = courir)</div>
+          <div>👉 Moitié droite : glisser pour regarder</div>
+          <div><b>Utiliser</b> : interagir avec l'objet visé</div>
+          <div><b>⬇</b> se baisser · <b>🗺️</b> plan · <b>❚❚</b> pause</div>
+          <div>Fenêtres : bouton ✕ pour fermer</div>
+          <div>Clavier Bluetooth : ZQSD + E aussi</div>
+        </div>
+        <div class="controls-grid kbd-only">
           <div><kbd>ZQSD</kbd>/<kbd>WASD</kbd> se déplacer</div>
           <div><kbd>Souris</kbd> regarder</div>
           <div><kbd>Maj</kbd> courir</div>
@@ -46,7 +54,7 @@ export class Menus {
           <div><kbd>H</kbd> afficher / masquer l'aide</div>
           <div><kbd>Échap</kbd> fermer / pause</div>
         </div>
-        <p class="note">Cliquer sur un bouton verrouille la souris dans le jeu (Pointer Lock). Appuyez sur <kbd>Échap</kbd> pour la libérer.</p>
+        <p class="note kbd-only">Cliquer sur un bouton verrouille la souris dans le jeu (Pointer Lock). Appuyez sur <kbd>Échap</kbd> pour la libérer.</p>
       </div>`;
     this.start.querySelector('[data-act="new"]')!.addEventListener('click', () => cb.onStart(false));
     const cont = this.start.querySelector<HTMLButtonElement>('[data-act="continue"]')!;

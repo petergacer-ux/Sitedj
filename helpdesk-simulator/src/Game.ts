@@ -32,6 +32,7 @@ import { Hud } from './ui/Hud';
 import { MapView } from './ui/MapView';
 import { Menus } from './ui/Menus';
 import { Notifications } from './ui/Notifications';
+import { TouchControls, isTouchDevice } from './ui/TouchControls';
 import type { Door } from './world/Door';
 import type { RackBuild } from './world/furniture';
 import { World, type FocusView, type WorldActions } from './world/World';
@@ -63,6 +64,10 @@ export class Game {
   private fpsTimer = 0;
   private rackHover: HTMLElement;
   private rackView: RackBuild | null = null;
+  /** Mode tactile (iPad) : pas de Pointer Lock, joystick + boutons. */
+  private readonly touchMode = isTouchDevice();
+  private touch: TouchControls | null = null;
+  private rackTouchY: number | null = null;
 
   constructor(container: HTMLElement) {
     const gameLayer = el('div', { class: 'game-layer' });
@@ -80,6 +85,25 @@ export class Game {
     this.rackHover = el('div', { class: 'rack-tooltip hidden' });
     this.fps = el('div', { class: 'fps hidden' });
     uiLayer.append(this.rackHover, this.fps);
+    if (this.touchMode) {
+      document.body.classList.add('touch');
+      this.touch = new TouchControls(uiLayer, {
+        interact: () => {
+          const target = this.interactions.hovered;
+          if (this.mode === 'playing' && target && !this.map.isOpen) target.onInteract();
+        },
+        toggleCrouch: () => (this.controller.crouching = !this.controller.crouching),
+        toggleMap: () => {
+          this.map.toggle();
+          sound.play('click');
+        },
+        pause: () => {
+          if (this.mode === 'playing') this.pause();
+        },
+        look: (dx, dy) => this.controller.look(dx, dy),
+      });
+      this.controller.virtualMove = this.touch.move;
+    }
     this.menus = new Menus(
       uiLayer,
       this.settings,
@@ -113,12 +137,7 @@ export class Game {
 
   private bindEvents(): void {
     const controls = this.controller.controls;
-    controls.addEventListener('lock', () => {
-      this.mode = 'playing';
-      this.menus.hideAll();
-      this.hud.setVisible(true);
-      this.hud.setCrosshairVisible(true);
-    });
+    controls.addEventListener('lock', () => this.enterPlaying());
     controls.addEventListener('unlock', () => {
       this.controller.releaseKeys();
       if (this.expectingUnlock) {
@@ -139,6 +158,18 @@ export class Game {
     window.addEventListener('wheel', (e) => this.onWheel(e), { passive: true });
     this.renderer.canvas.addEventListener('mousemove', (e) => this.onRackMouseMove(e));
     this.renderer.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Vue baie au doigt : glisser verticalement pour monter / descendre, toucher pour identifier.
+    this.renderer.canvas.addEventListener('pointerdown', (e) => {
+      if (this.mode !== 'rack' || e.pointerType === 'mouse') return;
+      this.rackTouchY = e.clientY;
+      this.onRackMouseMove(e);
+    });
+    this.renderer.canvas.addEventListener('pointermove', (e) => {
+      if (this.mode !== 'rack' || this.rackTouchY === null || !this.rackView) return;
+      this.controller.nudgeFocus((e.clientY - this.rackTouchY) * 0.004, this.rackView.minY, this.rackView.maxY);
+      this.rackTouchY = e.clientY;
+    });
+    window.addEventListener('pointerup', () => (this.rackTouchY = null));
     this.hud.root.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('[data-act="exit-focus"]')) this.exitRack(false);
     });
@@ -212,8 +243,21 @@ export class Game {
 
   // ------------------------------------------------------------------ modes
 
+  /** Reprise du contrôle à la première personne. */
+  private enterPlaying(): void {
+    this.mode = 'playing';
+    this.menus.hideAll();
+    this.hud.setVisible(true);
+    this.hud.setCrosshairVisible(true);
+  }
+
   private requestLock(): void {
     sound.unlock();
+    if (this.touchMode) {
+      // Sur tablette, pas de verrouillage de la souris : on reprend directement.
+      this.enterPlaying();
+      return;
+    }
     try {
       const p = this.controller.controls.domElement as HTMLElement;
       const r = p.requestPointerLock() as unknown as Promise<void> | undefined;
@@ -231,6 +275,7 @@ export class Game {
 
   /** Libère la souris sans déclencher le menu pause. */
   private releasePointer(): void {
+    if (this.touchMode) return;
     if (this.controller.isLocked) {
       this.expectingUnlock = true;
       this.controller.controls.unlock();
@@ -317,7 +362,9 @@ export class Game {
     const look = rack.front.clone().setY(y - 0.08);
     sound.play('open');
     this.hud.setFocusHint(
-      '<b>Vue rapprochée de la baie</b> · Molette : monter / descendre · Survolez un équipement pour l’identifier · <kbd>Échap</kbd> ou <button class="btn small" data-act="exit-focus">✕ Quitter</button>',
+      this.touchMode
+        ? '<b>Vue baie</b> · Glissez pour monter / descendre · Touchez un équipement pour l’identifier · <button class="btn small" data-act="exit-focus">✕ Quitter</button>'
+        : '<b>Vue rapprochée de la baie</b> · Molette : monter / descendre · Survolez un équipement pour l’identifier · <kbd>Échap</kbd> ou <button class="btn small" data-act="exit-focus">✕ Quitter</button>',
     );
     await this.controller.focusOn(pos, look, 0.7);
   }
@@ -555,6 +602,11 @@ export class Game {
       this.lastPrompt = prompt;
     }
     this.hud.setCrouching(this.mode === 'playing' && this.controller.crouching);
+    if (this.touch) {
+      this.touch.setVisible(this.mode === 'playing');
+      this.touch.setAction(prompt);
+      this.touch.setCrouching(this.controller.crouching);
+    }
     this.map.draw(this.controller.x, this.controller.z, this.controller.yaw, this.state.openTicketDesks, this.elapsed);
 
     this.renderer.render();
