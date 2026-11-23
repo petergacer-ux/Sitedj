@@ -99,7 +99,8 @@ export class TouchControls {
 
   private onDown(e: PointerEvent): void {
     e.preventDefault();
-    if (e.clientX < window.innerWidth * 0.45 && this.joyId === null) {
+    // Souris / trackpad : cliquer-glisser n'importe où = regarder. Doigt à gauche = joystick.
+    if (e.pointerType !== 'mouse' && e.clientX < window.innerWidth * 0.45 && this.joyId === null) {
       this.joyId = e.pointerId;
       this.joyOrigin = { x: e.clientX, y: e.clientY };
       this.joyBase.style.left = `${e.clientX}px`;

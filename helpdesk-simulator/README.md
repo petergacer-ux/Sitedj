@@ -35,10 +35,11 @@ Ouvrez ensuite l'adresse affichée (par défaut <http://localhost:5173>).
 | **Z Q S D** (AZERTY) / **W A S D** (QWERTY) / flèches | se déplacer — les deux dispositions marchent automatiquement |
 | **Maj** | marcher plus vite |
 | **C** (ou Ctrl gauche) | se baisser (pour voir les prises murales sous les bureaux) |
-| **E** | interagir avec l'objet visé (il est surligné et une bulle s'affiche) |
+| **E** ou **clic gauche** | interagir avec l'objet visé (il est surligné et une bulle s'affiche) |
 | **M** | plan de l'étage (position, bureaux, tickets ouverts) |
 | **H** | afficher / masquer l'aide des touches |
 | **Échap** | fermer une fenêtre / quitter une vue rapprochée / menu pause |
+| **P** | pause (pratique sur les claviers sans Échap) |
 | **Molette** | en vue rapprochée de la baie : monter / descendre |
 | **1 à 9** | choisir une réponse dans un dialogue |
 
@@ -55,7 +56,12 @@ Le jeu détecte l'écran tactile et affiche des commandes adaptées (pas besoin 
 | **✕** des fenêtres | fermer et reprendre |
 | Vue baie : glisser verticalement | monter / descendre ; toucher un équipement pour l'identifier |
 
-Un clavier Bluetooth branché sur l'iPad fonctionne aussi (ZQSD + E). Comme `npm` ne tourne pas sur iPad,
+**iPad avec clavier + trackpad (Magic Keyboard…)** : touchez « Nouvelle partie » *avec le trackpad*.
+Le pointeur est alors verrouillé et on joue comme sur ordinateur : trackpad pour regarder, ZQSD pour marcher,
+**E** ou clic pour interagir, **P** pour la pause (les claviers d'iPad n'ont souvent pas de touche Échap ; le ✕ ferme les fenêtres).
+Si le navigateur refuse le verrouillage, le jeu bascule tout seul en « cliquer-glisser pour regarder ».
+
+Comme `npm` ne tourne pas sur iPad,
 jouez à la version hébergée (voir `npm run build:single`) plutôt qu'avec `npm run dev`.
 
 > ⚠️ Préférez **C** à Ctrl pour se baisser : dans certains navigateurs, Ctrl + W ferme l'onglet !

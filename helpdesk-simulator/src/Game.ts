@@ -68,6 +68,11 @@ export class Game {
   private readonly touchMode = isTouchDevice();
   private touch: TouchControls | null = null;
   private rackTouchY: number | null = null;
+  /** Dernier type de pointeur utilisé (« mouse » = souris ou trackpad, y compris sur iPad). */
+  private lastPointerType = 'mouse';
+  /** Le navigateur a refusé le Pointer Lock : on joue sans (regard au glisser). */
+  private lockUnavailable = false;
+  private lockPending = false;
 
   constructor(container: HTMLElement) {
     const gameLayer = el('div', { class: 'game-layer' });
@@ -137,8 +142,13 @@ export class Game {
 
   private bindEvents(): void {
     const controls = this.controller.controls;
-    controls.addEventListener('lock', () => this.enterPlaying());
+    controls.addEventListener('lock', () => {
+      this.lockPending = false;
+      document.body.classList.add('locked');
+      this.enterPlaying();
+    });
     controls.addEventListener('unlock', () => {
+      document.body.classList.remove('locked');
       this.controller.releaseKeys();
       if (this.expectingUnlock) {
         this.expectingUnlock = false;
@@ -146,12 +156,12 @@ export class Game {
       }
       if (this.mode === 'playing') this.pause();
     });
-    document.addEventListener('pointerlockerror', () => {
-      // Le navigateur refuse parfois le verrouillage (trop tôt après Échap) : on propose de recliquer.
-      if (this.mode !== 'title' && this.mode !== 'paused' && this.mode !== 'dayend') {
-        this.mode = 'resume';
-        this.menus.showResume();
-      }
+    document.addEventListener('pointerlockerror', () => this.onLockFailed());
+    // Souris / trackpad ou doigt ? (un iPad avec trackpad envoie pointerType « mouse »)
+    window.addEventListener('pointerdown', (e) => (this.lastPointerType = e.pointerType), { capture: true });
+    // Clic gauche = interagir, quand la souris est verrouillée (comme dans un FPS).
+    document.addEventListener('mousedown', (e) => {
+      if (e.button === 0 && this.controller.isLocked && this.mode === 'playing' && !this.map.isOpen) this.interactions.hovered?.onInteract();
     });
 
     document.addEventListener('keydown', (e) => this.onKeyDown(e));
@@ -192,11 +202,16 @@ export class Game {
         this.app.close();
       } else if (this.mode === 'dialog') this.closeDialog(true);
       else if (this.mode === 'rack') this.exitRack(true);
+      else if (this.mode === 'playing') this.pause(); // sans Pointer Lock (iPad), Échap met en pause
       return;
     }
     if (e.repeat) return;
     if (this.mode !== 'playing') return;
-    if (key === 'e') {
+    if (key === 'p') {
+      // P = pause (utile sur les claviers d'iPad sans touche Échap)
+      this.releasePointer();
+      this.pause();
+    } else if (key === 'e') {
       const target = this.interactions.hovered;
       if (target && !this.map.isOpen) target.onInteract();
     } else if (key === 'm' || e.code === 'Semicolon') {
@@ -251,31 +266,51 @@ export class Game {
     this.hud.setCrosshairVisible(true);
   }
 
+  /**
+   * Faut-il verrouiller le pointeur ? Oui avec une souris ou un trackpad (y compris sur iPad),
+   * non quand on joue au doigt ou si le navigateur l'a refusé.
+   */
+  private wantsLock(): boolean {
+    const supported = typeof this.renderer.canvas.requestPointerLock === 'function' && !this.lockUnavailable;
+    return supported && (!this.touchMode || this.lastPointerType === 'mouse');
+  }
+
   private requestLock(): void {
     sound.unlock();
-    if (this.touchMode) {
-      // Sur tablette, pas de verrouillage de la souris : on reprend directement.
+    if (!this.wantsLock()) {
+      // Au doigt : pas de verrouillage, on reprend directement (joystick + glisser).
       this.enterPlaying();
       return;
     }
+    this.lockPending = true;
     try {
-      const p = this.controller.controls.domElement as HTMLElement;
-      const r = p.requestPointerLock() as unknown as Promise<void> | undefined;
-      if (r && typeof r.catch === 'function') {
-        r.catch(() => {
-          this.mode = 'resume';
-          this.menus.showResume();
-        });
-      }
+      const r = this.renderer.canvas.requestPointerLock() as unknown as Promise<void> | undefined;
+      if (r && typeof r.catch === 'function') r.catch(() => this.onLockFailed());
     } catch {
-      this.mode = 'resume';
-      this.menus.showResume();
+      this.onLockFailed();
     }
+  }
+
+  private onLockFailed(): void {
+    // Un refus ne concerne que NOTRE dernière demande de verrouillage.
+    if (!this.lockPending) return;
+    this.lockPending = false;
+    if (this.touchMode) {
+      // iPad sans Pointer Lock : on joue avec le trackpad en « cliquer-glisser » pour regarder.
+      if (!this.lockUnavailable) {
+        this.lockUnavailable = true;
+        this.state.toast('Votre navigateur ne verrouille pas le pointeur : cliquez-glissez avec le trackpad pour regarder, ZQSD pour marcher, E pour interagir.', 'info', 'Clavier + trackpad');
+      }
+      this.enterPlaying();
+      return;
+    }
+    // Sur ordinateur, le navigateur refuse parfois (trop tôt après Échap) : on propose de recliquer.
+    this.mode = 'resume';
+    this.menus.showResume();
   }
 
   /** Libère la souris sans déclencher le menu pause. */
   private releasePointer(): void {
-    if (this.touchMode) return;
     if (this.controller.isLocked) {
       this.expectingUnlock = true;
       this.controller.controls.unlock();
@@ -343,7 +378,7 @@ export class Game {
     this.closingByKey = false;
     void this.controller.restore();
     if (this.mode === 'dayend') return;
-    if (byKey) {
+    if (byKey && this.wantsLock()) {
       // Échap n'est pas un « geste utilisateur » pour le Pointer Lock : il faut recliquer.
       this.mode = 'resume';
       this.menus.showResume();
@@ -362,7 +397,7 @@ export class Game {
     const look = rack.front.clone().setY(y - 0.08);
     sound.play('open');
     this.hud.setFocusHint(
-      this.touchMode
+      this.touchMode && !this.wantsLock()
         ? '<b>Vue baie</b> · Glissez pour monter / descendre · Touchez un équipement pour l’identifier · <button class="btn small" data-act="exit-focus">✕ Quitter</button>'
         : '<b>Vue rapprochée de la baie</b> · Molette : monter / descendre · Survolez un équipement pour l’identifier · <kbd>Échap</kbd> ou <button class="btn small" data-act="exit-focus">✕ Quitter</button>',
     );
@@ -376,7 +411,7 @@ export class Game {
     this.hud.setFocusHint(null);
     sound.play('close');
     void this.controller.restore();
-    if (byKey) {
+    if (byKey && this.wantsLock()) {
       this.mode = 'resume';
       this.menus.showResume();
     } else this.requestLock();
@@ -420,7 +455,7 @@ export class Game {
     if (this.mode !== 'dialog') return;
     this.dialog.hide();
     void this.controller.restore(0.3);
-    if (byKey) {
+    if (byKey && this.wantsLock()) {
       this.mode = 'resume';
       this.menus.showResume();
     } else this.requestLock();
@@ -603,7 +638,7 @@ export class Game {
     }
     this.hud.setCrouching(this.mode === 'playing' && this.controller.crouching);
     if (this.touch) {
-      this.touch.setVisible(this.mode === 'playing');
+      this.touch.setVisible(this.mode === 'playing' && !this.controller.isLocked);
       this.touch.setAction(prompt);
       this.touch.setCrouching(this.controller.crouching);
     }

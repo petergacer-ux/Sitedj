@@ -31,10 +31,10 @@ export class Hud {
       ['ZQSD / WASD', 'se déplacer'],
       ['Maj', 'courir'],
       ['C', 'se baisser'],
-      ['E', 'interagir'],
+      ['E / clic', 'interagir'],
       ['M', 'plan de l’étage'],
       ['H', 'masquer l’aide'],
-      ['Échap', 'pause'],
+      ['Échap / P', 'pause'],
     ]
       .map(([k, v]) => `<div><kbd>${k}</kbd> ${v}</div>`)
       .join('');

@@ -42,7 +42,7 @@ export class Menus {
           <div><b>Utiliser</b> : interagir avec l'objet visé</div>
           <div><b>⬇</b> se baisser · <b>🗺️</b> plan · <b>❚❚</b> pause</div>
           <div>Fenêtres : bouton ✕ pour fermer</div>
-          <div>Clavier Bluetooth : ZQSD + E aussi</div>
+          <div>Clavier + trackpad : touchez « Nouvelle partie » <b>avec le trackpad</b> pour jouer comme sur PC (ZQSD, E, P = pause)</div>
         </div>
         <div class="controls-grid kbd-only">
           <div><kbd>ZQSD</kbd>/<kbd>WASD</kbd> se déplacer</div>
@@ -52,7 +52,7 @@ export class Menus {
           <div><kbd>E</kbd> interagir</div>
           <div><kbd>M</kbd> plan de l'étage</div>
           <div><kbd>H</kbd> afficher / masquer l'aide</div>
-          <div><kbd>Échap</kbd> fermer / pause</div>
+          <div><kbd>Échap</kbd>/<kbd>P</kbd> fermer / pause</div>
         </div>
         <p class="note kbd-only">Cliquer sur un bouton verrouille la souris dans le jeu (Pointer Lock). Appuyez sur <kbd>Échap</kbd> pour la libérer.</p>
       </div>`;

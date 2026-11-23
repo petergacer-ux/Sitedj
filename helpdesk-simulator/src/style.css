@@ -221,6 +221,9 @@ h2 { margin: 0 0 16px; }
 .touch-only { display: none !important; }
 body.touch .touch-only { display: grid !important; }
 body.touch .kbd-only, body.touch .hud-hints { display: none !important; }
+/* iPad avec clavier + trackpad verrouillé : on réaffiche l'aide clavier */
+body.touch.locked .hud-hints { display: block !important; }
+body.touch.locked .interact-prompt { display: block; }
 body.touch, body.touch * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 body.touch input, body.touch select { -webkit-user-select: auto; user-select: auto; }
 .game-layer canvas { touch-action: none; }
