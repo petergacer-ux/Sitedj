@@ -1,0 +1,4 @@
+{
+  "_comment": "Associe une clé d'objet du décor à un fichier .glb/.gltf placé dans ce dossier. Exemple : \"desk\": \"bureau.glb\". Clés disponibles : rack, coffee, copier, shelf.",
+  "models": {}
+}
