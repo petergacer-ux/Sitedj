@@ -5,6 +5,7 @@
  * Chaque meuble est décrit dans son repère local : le mur est du côté -z local.
  */
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { AABB2 } from './collision';
 import { C, mat } from './materials';
 import { makeLabel, makeTextTexture } from './labels';
@@ -74,6 +75,9 @@ export interface DeskBuild {
   /** Position de la caméra devant l'écran (monde). */
   screenViewPos: THREE.Vector3;
   frame: THREE.Matrix4;
+  /** Câble du poste branché dans la prise / débranché au sol. */
+  cablePlugged: THREE.Mesh;
+  cableLoose: THREE.Mesh;
 }
 
 /**
@@ -120,36 +124,75 @@ export function buildDesk(
   pc.add(led);
   root.add(pc);
 
-  // --- Prise murale RJ45 étiquetée ---
-  const jack = new THREE.Group();
-  jack.name = `jack:${opts.id}`;
+  // --- Prise murale RJ45 étiquetée + câble du poste ---
   // Placée entre les pieds du bureau, à gauche de la tour pour rester visible en se baissant.
-  const JX = 0.12;
-  jack.add(box([0.08, 0.12, 0.02], mat(C.jack), [JX, 0.3, -0.415]));
-  const port = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.02, 0.004), mat(0x222222));
-  port.position.set(JX, 0.31, -0.404);
-  jack.add(port);
-  const label = makeLabel(opts.jackLabel ?? opts.id, 0.1, 0.035, { bg: '#ffffff', fg: '#0b3a7a', border: '#0b3a7a', px: 600 });
-  label.position.set(JX, 0.39, -0.404);
-  jack.add(label);
-  root.add(jack);
-
-  // --- Câble RJ45 bleu : arrière de la tour → prise (étape 2 : il deviendra dynamique) ---
-  const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.45, 0.12, -0.345),
-    new THREE.Vector3(0.42, 0.015, -0.37),
-    new THREE.Vector3(0.25, 0.015, -0.39),
-    new THREE.Vector3(JX, 0.12, -0.4),
-    new THREE.Vector3(JX, 0.3, -0.404),
-  ]);
-  const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.005, 5), mat(C.cableBlue));
-  cable.name = 'cable';
-  root.add(cable);
+  const jackParts = buildJackAndCable(root, {
+    label: opts.jackLabel ?? opts.id,
+    jack: new THREE.Vector3(0.12, 0.3, -0.415),
+    from: new THREE.Vector3(0.45, 0.12, -0.345),
+  });
+  const jack = jackParts.jack;
+  jack.name = `jack:${opts.id}`;
 
   root.updateMatrixWorld(true);
   const screenCenter = new THREE.Vector3(0, 1.08, -0.18).applyMatrix4(frame);
   const screenViewPos = new THREE.Vector3(0, 1.1, 0.42).applyMatrix4(frame);
-  return { root, pc, jack, screen, screenCenter, screenViewPos, frame };
+  return { root, pc, jack, screen, screenCenter, screenViewPos, frame, cablePlugged: jackParts.plugged, cableLoose: jackParts.loose };
+}
+
+/**
+ * Prise murale (face vers +z local) et câble RJ45 depuis un équipement.
+ * Deux versions du câble : branché dans la prise, ou débranché et posé au sol.
+ */
+export function buildJackAndCable(
+  parent: THREE.Group,
+  opts: { label: string; jack: THREE.Vector3; from: THREE.Vector3; color?: number },
+): { jack: THREE.Group; plugged: THREE.Mesh; loose: THREE.Mesh } {
+  const J = opts.jack;
+  const jack = new THREE.Group();
+  jack.add(box([0.08, 0.12, 0.02], mat(C.jack), [J.x, J.y, J.z]));
+  const port = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.02, 0.004), mat(0x222222));
+  port.position.set(J.x, J.y + 0.01, J.z + 0.011);
+  jack.add(port);
+  const label = makeLabel(opts.label, 0.1, 0.035, { bg: '#ffffff', fg: '#0b3a7a', border: '#0b3a7a', px: 600 });
+  label.position.set(J.x, J.y + 0.09, J.z + 0.011);
+  jack.add(label);
+  parent.add(jack);
+
+  const cableMat = mat(opts.color ?? C.cableBlue);
+  const F = opts.from;
+  const plugCurve = new THREE.CatmullRomCurve3([
+    F.clone(),
+    new THREE.Vector3(F.x - 0.03, 0.015, F.z - 0.025),
+    new THREE.Vector3((F.x + J.x) / 2, 0.015, J.z + 0.025),
+    new THREE.Vector3(J.x, J.y - 0.18, J.z + 0.015),
+    new THREE.Vector3(J.x, J.y + 0.01, J.z + 0.012),
+  ]);
+  const plugged = new THREE.Mesh(withPlug(new THREE.TubeGeometry(plugCurve, 24, 0.005, 5), new THREE.Vector3(J.x, J.y + 0.01, J.z + 0.02)), cableMat);
+  plugged.name = 'cable-plugged';
+  // Câble débranché : il traîne au sol devant la prise.
+  const endPos = new THREE.Vector3(J.x + 0.06, 0.012, J.z + 0.16);
+  const looseCurve = new THREE.CatmullRomCurve3([
+    F.clone(),
+    new THREE.Vector3(F.x - 0.03, 0.015, F.z - 0.02),
+    new THREE.Vector3((F.x + endPos.x) / 2, 0.012, (F.z + endPos.z) / 2 + 0.05),
+    endPos,
+  ]);
+  const loose = new THREE.Mesh(withPlug(new THREE.TubeGeometry(looseCurve, 20, 0.005, 5), endPos.clone().add(new THREE.Vector3(0.012, 0, 0.004))), cableMat);
+  loose.name = 'cable-loose';
+  loose.visible = false;
+  parent.add(plugged, loose);
+  return { jack, plugged, loose };
+}
+
+/** Ajoute une fiche RJ45 au bout d'un tube. */
+function withPlug(tube: THREE.BufferGeometry, at: THREE.Vector3): THREE.BufferGeometry {
+  const plug = new THREE.BoxGeometry(0.016, 0.014, 0.028);
+  plug.translate(at.x, at.y, at.z);
+  const merged = mergeGeometries([tube.toNonIndexed(), plug.toNonIndexed()]);
+  tube.dispose();
+  plug.dispose();
+  return merged;
 }
 
 /** Petit téléphone de bureau (interactif). */
@@ -205,156 +248,6 @@ export function buildShelf(ctx: BuildCtx, x: number, z: number, rotY: number): T
   ctx.scene.add(root);
   addCollider(ctx, frame, 0, 0, 1.85, 0.5);
   return g;
-}
-
-/** Texture de façade d'un équipement de la baie (ports, LEDs, logo…). */
-function deviceTexture(kind: 'patch' | 'switch' | 'router' | 'server' | 'ups' | 'brush', name: string, ports: number): THREE.CanvasTexture {
-  const w = 1024;
-  const h = kind === 'server' ? 256 : kind === 'ups' ? 384 : 128;
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
-  const bg = { patch: '#1b1d20', switch: '#2c3e50', router: '#34495e', server: '#2d3033', ups: '#1f2326', brush: '#111' }[kind];
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, w, h);
-  // oreilles de fixation
-  ctx.fillStyle = '#555b62';
-  ctx.fillRect(0, 0, 40, h);
-  ctx.fillRect(w - 40, 0, 40, h);
-  ctx.fillStyle = '#c8d0d8';
-  ctx.font = 'bold 22px Arial';
-  ctx.textBaseline = 'middle';
-  if (kind === 'patch' || kind === 'switch') {
-    ctx.fillText(name, 52, h / 2);
-    const startX = 220;
-    const cols = ports / 2;
-    const cw = (w - startX - 60) / cols;
-    for (let i = 0; i < ports; i++) {
-      const col = Math.floor(i / 2);
-      const row = i % 2;
-      const px = startX + col * cw + 4;
-      const py = row === 0 ? 14 : 70;
-      ctx.fillStyle = '#0c0d0e';
-      ctx.fillRect(px, py, cw - 10, 42);
-      ctx.fillStyle = '#9aa4ae';
-      ctx.font = '13px Arial';
-      ctx.fillText(String(i + 1), px + 2, row === 0 ? py + 52 : py - 7);
-    }
-  } else if (kind === 'router') {
-    ctx.fillText(name, 52, h / 2);
-    for (let i = 0; i < 4; i++) {
-      ctx.fillStyle = '#0c0d0e';
-      ctx.fillRect(600 + i * 70, 40, 54, 46);
-    }
-    ctx.fillStyle = '#3cff6a';
-    ctx.beginPath();
-    ctx.arc(520, h / 2, 8, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (kind === 'server') {
-    ctx.fillText(name, 52, 40);
-    for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = '#44494f';
-      ctx.fillRect(260 + i * 85, 30, 75, 190);
-      ctx.fillStyle = '#3cff6a';
-      ctx.fillRect(268 + i * 85, 200, 10, 8);
-    }
-    ctx.fillStyle = '#4fc3f7';
-    ctx.beginPath();
-    ctx.arc(120, 170, 16, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (kind === 'ups') {
-    ctx.fillText(name, 52, 60);
-    ctx.fillStyle = '#7ec8a0';
-    ctx.fillRect(420, 120, 220, 110);
-    ctx.fillStyle = '#123';
-    ctx.font = 'bold 28px monospace';
-    ctx.fillText('SECTEUR', 440, 155);
-    ctx.fillText('BAT 100%', 440, 200);
-  } else {
-    ctx.fillStyle = '#000';
-    for (let i = 0; i < 60; i++) ctx.fillRect(60 + i * 15, 30, 3, 70);
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  return tex;
-}
-
-export interface RackBuild {
-  root: THREE.Group;
-  rack: THREE.Group;
-  ups: THREE.Group;
-  /** Hauteur des équipements (pour la vue rapprochée). */
-  minY: number;
-  maxY: number;
-  front: THREE.Vector3; // centre de la façade (monde)
-  frontNormal: THREE.Vector3;
-}
-
-/** Hauteur d'une unité de baie (exagérée pour la lisibilité). */
-const U = 0.06;
-
-/** Baie réseau 19" : panneau de brassage, 2 switchs, routeur, serveur, onduleur. */
-export function buildRack(ctx: BuildCtx, x: number, z: number, rotY: number): RackBuild {
-  const frame = frameAt(x, z, rotY);
-  const root = rootAt(x, z, rotY, 'rack-root');
-  const rack = new THREE.Group();
-  rack.name = 'rack';
-  const W = 0.6;
-  const D = 0.9;
-  const H = 2.0;
-  const body = mat(C.rack);
-  // Montants et capots
-  rack.add(box([0.04, H, D], body, [-W / 2 + 0.02, H / 2, 0]));
-  rack.add(box([0.04, H, D], body, [W / 2 - 0.02, H / 2, 0]));
-  rack.add(box([W, 0.05, D], body, [0, H - 0.025, 0]));
-  rack.add(box([W, 0.08, D], body, [0, 0.04, 0]));
-  rack.add(box([W, H, 0.03], body, [0, H / 2, -D / 2 + 0.015]));
-  const frontZ = D / 2 - 0.03;
-
-  const devices: { kind: Parameters<typeof deviceTexture>[0]; name: string; u: number; top: number; ports: number; depth: number }[] = [
-    { kind: 'patch', name: 'PP-01', u: 1, top: 1.86, ports: 24, depth: 0.12 },
-    { kind: 'brush', name: '', u: 1, top: 1.86 - U, ports: 0, depth: 0.06 },
-    { kind: 'switch', name: 'SW-01', u: 1, top: 1.86 - 2 * U, ports: 24, depth: 0.3 },
-    { kind: 'switch', name: 'SW-02', u: 1, top: 1.86 - 3 * U, ports: 24, depth: 0.3 },
-    { kind: 'router', name: 'RT-FW-01', u: 1, top: 1.86 - 5 * U, ports: 4, depth: 0.35 },
-    { kind: 'server', name: 'SRV-01 (AD/DNS/DHCP/Fichiers)', u: 2, top: 1.86 - 7 * U, ports: 0, depth: 0.7 },
-    { kind: 'server', name: 'NAS-01 (Sauvegardes)', u: 2, top: 1.86 - 10 * U, ports: 0, depth: 0.5 },
-    { kind: 'brush', name: '', u: 1, top: 1.86 - 13 * U, ports: 0, depth: 0.06 },
-  ];
-  // Panneaux d'obturation dans les emplacements vides
-  for (const top of [1.86 - 4 * U, 1.86 - 6 * U, 1.86 - 9 * U, 1.86 - 12 * U]) {
-    rack.add(box([W - 0.08, U - 0.004, 0.01], mat(0x15171a), [0, top - U / 2, frontZ - 0.005]));
-  }
-  for (let i = 0; i < 10; i++) rack.add(box([W - 0.08, U - 0.004, 0.01], mat(0x15171a), [0, 1.86 - (14 + i) * U - U / 2, frontZ - 0.005]));
-  for (const d of devices) {
-    const h = d.u * U - 0.004;
-    const cy = d.top - (d.u * U) / 2;
-    rack.add(box([W - 0.1, h, d.depth], mat(0x2a2c30), [0, cy, frontZ - d.depth / 2]));
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.08, h), new THREE.MeshBasicMaterial({ map: deviceTexture(d.kind, d.name, d.ports) }));
-    face.position.set(0, cy, frontZ + 0.002);
-    face.name = `face:${d.name || d.kind}`;
-    rack.add(face);
-  }
-  root.add(rack);
-
-  // Onduleur en bas de baie (interactif séparément)
-  const ups = new THREE.Group();
-  ups.name = 'ups';
-  const upsH = 4 * U;
-  ups.add(box([W - 0.1, upsH, 0.6], mat(0x1f2326), [0, 0.1 + upsH / 2, frontZ - 0.3]));
-  const upsFace = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.08, upsH), new THREE.MeshBasicMaterial({ map: deviceTexture('ups', 'ONDULEUR 3000VA', 0) }));
-  upsFace.position.set(0, 0.1 + upsH / 2, frontZ + 0.002);
-  ups.add(upsFace);
-  root.add(ups);
-
-  ctx.scene.add(root);
-  addCollider(ctx, frame, 0, 0, W + 0.05, D + 0.05);
-  root.updateMatrixWorld(true);
-  const front = new THREE.Vector3(0, 1.2, frontZ).applyMatrix4(frame);
-  const frontNormal = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
-  return { root, rack, ups, minY: 0.3, maxY: 1.8, front, frontNormal };
 }
 
 /** Copieur multifonction. */
@@ -434,7 +327,12 @@ export function buildMeetingRoom(ctx: BuildCtx, x: number, z: number): THREE.Gro
 }
 
 /** Imprimante réseau sur meuble bas. */
-export function buildNetworkPrinter(ctx: BuildCtx, x: number, z: number, rotY: number): THREE.Group {
+export function buildNetworkPrinter(
+  ctx: BuildCtx,
+  x: number,
+  z: number,
+  rotY: number,
+): { printer: THREE.Group; jack: THREE.Group; plugged: THREE.Mesh; loose: THREE.Mesh } {
   const frame = frameAt(x, z, rotY);
   const root = rootAt(x, z, rotY, 'netprinter-root');
   ctx.solid.box(mat(0x7a7f87), [0.7, 0.7, 0.5], [0, 0.35, 0], frame);
@@ -443,7 +341,10 @@ export function buildNetworkPrinter(ctx: BuildCtx, x: number, z: number, rotY: n
   const lbl = makeLabel('IMP-COMPTA', 0.3, 0.06, { bg: '#fff', fg: '#333', px: 500 });
   lbl.position.set(0, 0.6, 0.252);
   root.add(lbl);
+  // Prise murale P-01 derrière le meuble, à côté
+  const jp = buildJackAndCable(root, { label: 'P-01', jack: new THREE.Vector3(0.5, 0.3, -0.505), from: new THREE.Vector3(0.1, 0.75, -0.18), color: 0x9aa0a6 });
+  jp.jack.name = 'jack:P-01';
   ctx.scene.add(root);
   addCollider(ctx, frame, 0, 0, 0.75, 0.55);
-  return g;
+  return { printer: g, ...jp };
 }

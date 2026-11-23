@@ -6,6 +6,8 @@
 import * as THREE from 'three';
 import { formatTime } from '../state/clock';
 
+export type NetIcon = 'ok' | 'limited' | 'none';
+
 export type ScreenState = 'lock' | 'desktop' | 'off' | 'error' | 'helpdesk' | 'tv' | 'nosignal';
 
 export interface Screen {
@@ -14,6 +16,8 @@ export interface Screen {
   pcName: string;
   userName: string;
   message?: string;
+  /** Icône réseau de la barre des tâches : ok, accès limité (APIPA), aucun réseau. */
+  net: NetIcon;
   canvas: HTMLCanvasElement;
   texture: THREE.CanvasTexture;
   material: THREE.MeshBasicMaterial;
@@ -33,7 +37,7 @@ export class ScreenManager {
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     const material = new THREE.MeshBasicMaterial({ map: texture });
-    const screen: Screen = { id, state, pcName, userName, canvas, texture, material };
+    const screen: Screen = { id, state, pcName, userName, net: 'ok', canvas, texture, material };
     this.screens.set(id, screen);
     this.draw(screen);
     return screen;
@@ -48,6 +52,14 @@ export class ScreenManager {
     if (!s) return;
     s.state = state;
     s.message = message;
+    this.draw(s);
+  }
+
+  /** Met à jour l'icône réseau (redessine seulement si elle change). */
+  setNet(id: string, net: NetIcon): void {
+    const s = this.screens.get(id);
+    if (!s || s.net === net) return;
+    s.net = net;
     this.draw(s);
   }
 
@@ -113,6 +125,19 @@ export class ScreenManager {
         ctx.font = '11px Arial';
         ctx.textAlign = 'right';
         ctx.fillText(time, W - 8, H - 5);
+        drawNetIcon(ctx, W - 52, H - 9, s.net);
+        if (s.net !== 'ok') {
+          // Bulle de notification Windows, visible de loin
+          ctx.fillStyle = '#2b2b2b';
+          ctx.fillRect(W - 170, H - 62, 162, 40);
+          ctx.fillStyle = s.net === 'none' ? '#ff6b6b' : '#ffd24d';
+          ctx.font = 'bold 11px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(s.net === 'none' ? 'Câble réseau débranché' : 'Pas d’accès Internet', W - 162, H - 46);
+          ctx.fillStyle = '#ddd';
+          ctx.font = '10px Arial';
+          ctx.fillText(s.net === 'none' ? 'Aucune connexion' : 'Réseau non identifié', W - 162, H - 31);
+        }
         break;
       }
       case 'error': {
@@ -183,4 +208,33 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, x: number, y: number,
     } else line = test;
   }
   if (line) ctx.fillText(line, x, y);
+}
+
+/** Icône réseau de la barre des tâches (écran + câble / triangle / croix). */
+function drawNetIcon(ctx: CanvasRenderingContext2D, x: number, y: number, net: NetIcon): void {
+  ctx.fillStyle = '#e8eef5';
+  ctx.fillRect(x - 6, y - 5, 12, 8);
+  ctx.fillRect(x - 2, y + 3, 4, 2);
+  if (net === 'limited') {
+    ctx.fillStyle = '#ffd24d';
+    ctx.beginPath();
+    ctx.moveTo(x + 6, y - 7);
+    ctx.lineTo(x + 12, y + 4);
+    ctx.lineTo(x, y + 4);
+    ctx.closePath();
+    ctx.fill();
+  } else if (net === 'none') {
+    ctx.fillStyle = '#ff4d4d';
+    ctx.beginPath();
+    ctx.arc(x + 6, y + 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x + 4, y);
+    ctx.lineTo(x + 8, y + 4);
+    ctx.moveTo(x + 8, y);
+    ctx.lineTo(x + 4, y + 4);
+    ctx.stroke();
+  }
 }

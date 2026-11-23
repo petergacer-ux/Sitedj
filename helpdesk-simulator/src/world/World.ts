@@ -18,13 +18,13 @@ import {
   buildNetworkPrinter,
   buildPhone,
   buildPlant,
-  buildRack,
   buildShelf,
   buildSmallPrinter,
   type BuildCtx,
   type DeskBuild,
-  type RackBuild,
 } from './furniture';
+import type { Network } from '../network/Network';
+import { Rack3D } from './Rack3D';
 import { makeLabel } from './labels';
 import { C, mat } from './materials';
 import { ModelLoader } from './ModelLoader';
@@ -40,8 +40,9 @@ export interface FocusView {
 export interface WorldActions {
   useMyPc(view: FocusView): void;
   useUserPc(desk: DeskDef, view: FocusView): void;
-  inspectJack(desk: DeskDef): void;
-  openRack(rack: RackBuild): void;
+  /** Prise murale : brancher / débrancher le câble (jackId = B-01, HD-01, P-01). */
+  toggleJack(jackId: string, hostId: string): void;
+  openRack(rack: Rack3D): void;
   inspectUps(): void;
   talkTo(user: UserDef): void;
   phone(): void;
@@ -61,11 +62,17 @@ export class World {
   readonly desks = new Map<string, DeskBuild>();
   readonly models = new ModelLoader();
   readonly occluders: THREE.Object3D[] = [];
-  rack!: RackBuild;
+  rack!: Rack3D;
+  /** Câbles de poste visibles : prise → [branché, débranché]. */
+  private jackCables = new Map<string, { host: string; plugged: THREE.Mesh; loose: THREE.Mesh }>();
   private npcs: NpcBuild[] = [];
   private time = 0;
 
-  constructor(private interactions: InteractionSystem, private actions: WorldActions) {
+  constructor(
+    private interactions: InteractionSystem,
+    private actions: WorldActions,
+    private net: Network,
+  ) {
     this.root.name = 'world';
   }
 
@@ -108,6 +115,7 @@ export class World {
     // --- Mon poste helpdesk ---
     const mine = buildDesk(ctx, { id: 'HD-01', x: MY_DESK.x, z: MY_DESK.z, rotY: MY_DESK.rotY, pcName: MY_DESK.pcName, userName: '', screenState: 'helpdesk', jackLabel: 'HD-01' });
     this.desks.set('HD-01', mine);
+    this.registerJack('HD-01', MY_DESK.pcName, mine);
     I.register({
       id: 'my-pc',
       object: mine.pc,
@@ -143,13 +151,7 @@ export class World {
         label: () => `E — Utiliser ${d.pcName}`,
         onInteract: () => A.useUserPc(d, { pos: desk.screenViewPos, look: desk.screenCenter }),
       });
-      I.register({
-        id: `jack:${d.id}`,
-        object: desk.jack,
-        label: () => `E — Examiner la prise ${d.id}`,
-        onInteract: () => A.inspectJack(d),
-        maxDistance: 1.6,
-      });
+      this.registerJack(d.id, d.pcName, desk);
       if (d.printer) {
         // Petit meuble à côté du bureau, avec l'imprimante dessus
         solid.box(mat(0x7a7f87), [0.5, 0.6, 0.45], [-1.0, 0.3, -0.15], desk.frame);
@@ -166,7 +168,7 @@ export class World {
     }
 
     // --- Salle serveur ---
-    this.rack = buildRack(ctx, SPOTS.rack.x, SPOTS.rack.z, 0);
+    this.rack = new Rack3D(ctx, SPOTS.rack.x, SPOTS.rack.z, 0);
     I.register({ id: 'rack', object: this.rack.rack, label: () => 'E — Ouvrir la baie', onInteract: () => A.openRack(this.rack) });
     I.register({ id: 'ups', object: this.rack.ups, label: () => 'E — Examiner l’onduleur', onInteract: () => A.inspectUps() });
     // Chemin de câbles au plafond qui part de la baie
@@ -183,7 +185,8 @@ export class World {
 
     // --- Imprimante réseau Compta ---
     const np = buildNetworkPrinter(ctx, SPOTS.networkPrinter.x, SPOTS.networkPrinter.z, -Math.PI / 2);
-    I.register({ id: 'netprinter', object: np, label: () => 'E — Examiner l’imprimante IMP-COMPTA', onInteract: () => A.printer('IMP-COMPTA') });
+    I.register({ id: 'netprinter', object: np.printer, label: () => 'E — Examiner l’imprimante IMP-COMPTA', onInteract: () => A.printer('IMP-COMPTA') });
+    this.registerJack('P-01', 'IMP-COMPTA', { jack: np.jack, cablePlugged: np.plugged, cableLoose: np.loose });
 
     // --- Salle de réunion ---
     const tv = buildMeetingRoom(ctx, SPOTS.meetingTable.x, SPOTS.meetingTable.z);
@@ -221,11 +224,56 @@ export class World {
     });
 
     // Modèles 3D personnalisés (optionnels)
-    this.models.register('rack', this.rack.rack);
     this.models.register('coffee', coffee);
     this.models.register('copier', copier);
     this.models.register('shelf', shelf);
     void this.models.loadAll();
+  }
+
+  /** Prise murale interactive : son libellé dépend de l'état réel du câble. */
+  private registerJack(jackId: string, hostId: string, parts: { jack: THREE.Group; cablePlugged: THREE.Mesh; cableLoose: THREE.Mesh }): void {
+    this.jackCables.set(jackId, { host: hostId, plugged: parts.cablePlugged, loose: parts.cableLoose });
+    this.interactions.register({
+      id: `jack:${jackId}`,
+      object: parts.jack,
+      label: () => {
+        const c = this.net.cableAt(`${hostId}:eth0`);
+        if (!c) return `E — Prise ${jackId} (aucun câble)`;
+        return c.b ? `E — Débrancher le câble de la prise ${jackId}` : `E — Brancher le câble dans la prise ${jackId}`;
+      },
+      onInteract: () => this.actions.toggleJack(jackId, hostId),
+      maxDistance: 1.6,
+    });
+    // Le câble lui-même est aussi interactif (on le voit mieux que la prise).
+    for (const m of [parts.cablePlugged, parts.cableLoose]) {
+      this.interactions.register({
+        id: `cable:${jackId}:${m.name}`,
+        object: m,
+        label: () => (m.visible ? (this.net.cableAt(`${hostId}:eth0`)?.b ? `E — Débrancher le câble de la prise ${jackId}` : `E — Brancher le câble dans la prise ${jackId}`) : null),
+        onInteract: () => this.actions.toggleJack(jackId, hostId),
+        maxDistance: 1.6,
+      });
+    }
+  }
+
+  /** Répercute l'état du réseau dans le décor : câbles des postes, cordons de la baie, icônes réseau des écrans. */
+  syncNetwork(): void {
+    this.jackCables.forEach((parts, jackId) => {
+      const c = this.net.cableAt(`${parts.host}:eth0`);
+      parts.plugged.visible = !!c && c.b === `${jackId}:jack`;
+      parts.loose.visible = !!c && !c.b;
+    });
+    this.rack.syncCables(this.net);
+    const hosts: [string, string][] = DESKS.map((d) => [d.id, d.pcName]);
+    hosts.push(['HD-01', MY_DESK.pcName]);
+    for (const [deskId, hostId] of hosts) {
+      const info = this.net.hostIp(hostId);
+      if (info.status === 'off') {
+        this.screens.setState(deskId, 'off');
+        continue;
+      }
+      this.screens.setNet(deskId, info.status === 'dhcp' || info.status === 'static' ? 'ok' : info.status === 'apipa' ? 'limited' : 'none');
+    }
   }
 
   /** Nombre d'utilisateurs présents. */
@@ -239,6 +287,7 @@ export class World {
 
   update(dt: number): void {
     this.time += dt;
+    this.rack.updateLeds(this.net, this.time);
     for (const d of this.doors) d.update(dt);
     for (const n of this.npcs) animateNpc(n, this.time);
   }

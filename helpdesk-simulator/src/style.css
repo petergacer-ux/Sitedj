@@ -256,3 +256,28 @@ body.touch .app-close { width: 56px; font-size: 18px; }
   .toasts { top: 64px; width: 300px; }
   .tbtn-pause { transform: translateX(130px); }
 }
+
+/* ---------------- Barre d'outils de la baie ---------------- */
+.focus-hint:has(.rackbar) { white-space: normal; width: min(980px, calc(100vw - 32px)); padding: 8px 14px; }
+.rackbar { display: flex; flex-direction: column; gap: 6px; }
+.rackbar-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rackbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,.18); margin: 0 6px; }
+.rackbar-status { color: var(--muted); font-size: 13px; }
+.rackbar-status b { color: #fff; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); cursor: pointer; pointer-events: auto; padding: 0; }
+.swatch.on { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+.btn.on { background: var(--accent); border-color: var(--accent); }
+.btn.danger-btn { background: #c0392b; border-color: #c0392b; }
+body.touch .swatch { width: 32px; height: 32px; }
+body.touch .rackbar .btn.small { padding: 7px 12px; font-size: 14px; }
+
+/* ---------------- Carte réseau du poste Windows ---------------- */
+.win-net { text-align: left; margin: 12px 0 6px; padding: 10px 12px; border-radius: 8px; background: #f3f6fa; border-left: 4px solid #2e7d32; }
+.win-net.warn { border-color: #f9a825; background: #fff8e1; }
+.win-net.bad { border-color: #c62828; background: #ffebee; }
+.win-net-title { font-weight: 700; margin-bottom: 6px; }
+.win-net table { border-collapse: collapse; font-size: 12.5px; width: 100%; }
+.win-net td { padding: 2px 4px; }
+.win-net td:first-child { color: #556; width: 45%; }
+.win-net td:last-child { font-family: Consolas, monospace; }
+.win-card { max-width: 460px !important; }

@@ -91,7 +91,7 @@ export class InteractionSystem {
         if ((o as THREE.Mesh).isMesh && m?.isMeshLambertMaterial) {
           h.materials.push({ m, emissive: m.emissive.clone(), intensity: m.emissiveIntensity });
           m.emissive.copy(HIGHLIGHT);
-          m.emissiveIntensity = 0.45;
+          m.emissiveIntensity = 0.3;
         }
       });
       this.highlighted.set(item.id, h);

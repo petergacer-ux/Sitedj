@@ -1,8 +1,9 @@
 /** Sauvegarde / chargement dans localStorage. */
+import type { NetworkState } from '../network/types';
 import type { GameState } from './GameState';
 
 const KEY = 'helpdesk-sim.save';
-const VERSION = 1;
+const VERSION = 2;
 
 export interface PlayerPose {
   x: number;
@@ -21,6 +22,8 @@ export interface SaveData {
   satisfaction: number;
   player: PlayerPose;
   openDoors: string[];
+  /** État du réseau (câbles, switchs, baux DHCP). Absent dans les sauvegardes v1. */
+  network?: NetworkState;
 }
 
 export function hasSave(): boolean {
@@ -31,7 +34,7 @@ export function hasSave(): boolean {
   }
 }
 
-export function writeSave(state: GameState, player: PlayerPose, openDoors: string[]): boolean {
+export function writeSave(state: GameState, player: PlayerPose, openDoors: string[], network: NetworkState): boolean {
   const data: SaveData = {
     version: VERSION,
     savedAt: new Date().toISOString(),
@@ -42,6 +45,7 @@ export function writeSave(state: GameState, player: PlayerPose, openDoors: strin
     satisfaction: state.satisfaction,
     player,
     openDoors,
+    network,
   };
   try {
     localStorage.setItem(KEY, JSON.stringify(data));
@@ -56,7 +60,8 @@ export function readSave(): SaveData | null {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const data = JSON.parse(raw) as SaveData;
-    return data.version === VERSION ? data : null;
+    // Les sauvegardes v1 (étape 1) restent lisibles : le réseau repart de zéro.
+    return data.version === VERSION || data.version === 1 ? data : null;
   } catch {
     return null;
   }

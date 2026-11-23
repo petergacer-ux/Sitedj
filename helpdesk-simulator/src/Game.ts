@@ -34,7 +34,10 @@ import { Menus } from './ui/Menus';
 import { Notifications } from './ui/Notifications';
 import { TouchControls, isTouchDevice } from './ui/TouchControls';
 import type { Door } from './world/Door';
-import type { RackBuild } from './world/furniture';
+import type { Rack3D } from './world/Rack3D';
+import { RackController } from './apps/RackController';
+import { Network } from './network/Network';
+import { createInitialNetwork } from './network/initial';
 import { World, type FocusView, type WorldActions } from './world/World';
 
 type Mode = 'title' | 'playing' | 'app' | 'dialog' | 'rack' | 'resume' | 'paused' | 'dayend';
@@ -63,11 +66,12 @@ export class Game {
   private frames = 0;
   private fpsTimer = 0;
   private rackHover: HTMLElement;
-  private rackView: RackBuild | null = null;
+  private rackCtl!: RackController;
+  /** Moteur réseau : source de vérité du câblage, des switchs et des adresses IP. */
+  readonly net = new Network(createInitialNetwork());
   /** Mode tactile (iPad) : pas de Pointer Lock, joystick + boutons. */
   private readonly touchMode = isTouchDevice();
   private touch: TouchControls | null = null;
-  private rackTouchY: number | null = null;
   /** Dernier type de pointeur utilisé (« mouse » = souris ou trackpad, y compris sur iPad). */
   private lastPointerType = 'mouse';
   /** Le navigateur a refusé le Pointer Lock : on joue sans (regard au glisser). */
@@ -125,8 +129,20 @@ export class Game {
     );
 
     // Monde 3D
-    this.world = new World(this.interactions, this.makeActions());
+    this.world = new World(this.interactions, this.makeActions(), this.net);
     this.world.build();
+    this.world.syncNetwork();
+    this.net.onChange(() => this.world.syncNetwork());
+    this.rackCtl = new RackController(
+      this.net,
+      this.world.rack,
+      this.renderer.camera,
+      this.controller,
+      this.hud,
+      this.rackHover,
+      (text, kind, title) => this.state.toast(text, kind, title),
+      () => this.touchMode && !this.controller.isLocked && this.lastPointerType !== 'mouse',
+    );
     this.renderer.scene.add(this.world.root);
     this.interactions.occluders = this.world.occluders;
     this.resetPlayer();
@@ -166,22 +182,16 @@ export class Game {
 
     document.addEventListener('keydown', (e) => this.onKeyDown(e));
     window.addEventListener('wheel', (e) => this.onWheel(e), { passive: true });
-    this.renderer.canvas.addEventListener('mousemove', (e) => this.onRackMouseMove(e));
     this.renderer.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-    // Vue baie au doigt : glisser verticalement pour monter / descendre, toucher pour identifier.
-    this.renderer.canvas.addEventListener('pointerdown', (e) => {
-      if (this.mode !== 'rack' || e.pointerType === 'mouse') return;
-      this.rackTouchY = e.clientY;
-      this.onRackMouseMove(e);
-    });
-    this.renderer.canvas.addEventListener('pointermove', (e) => {
-      if (this.mode !== 'rack' || this.rackTouchY === null || !this.rackView) return;
-      this.controller.nudgeFocus((e.clientY - this.rackTouchY) * 0.004, this.rackView.minY, this.rackView.maxY);
-      this.rackTouchY = e.clientY;
-    });
-    window.addEventListener('pointerup', () => (this.rackTouchY = null));
+    // Vue baie : souris, trackpad ou doigt
+    const c = this.renderer.canvas;
+    c.addEventListener('pointerdown', (e) => this.mode === 'rack' && this.rackCtl.onPointerDown(e));
+    c.addEventListener('pointermove', (e) => this.mode === 'rack' && this.rackCtl.onPointerMove(e));
+    c.addEventListener('pointerup', (e) => this.mode === 'rack' && this.rackCtl.onPointerUp(e));
     this.hud.root.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('[data-act="exit-focus"]')) this.exitRack(false);
+      const t = e.target as HTMLElement;
+      if (t.closest('[data-act="exit-focus"]')) this.exitRack(false);
+      else if (this.mode === 'rack') this.rackCtl.handleBarClick(t);
     });
 
     this.state.events.on('toast', (t) => {
@@ -201,7 +211,9 @@ export class Game {
         this.closingByKey = true;
         this.app.close();
       } else if (this.mode === 'dialog') this.closeDialog(true);
-      else if (this.mode === 'rack') this.exitRack(true);
+      else if (this.mode === 'rack') {
+        if (!this.rackCtl.escape()) this.exitRack(true);
+      }
       else if (this.mode === 'playing') this.pause(); // sans Pointer Lock (iPad), Échap met en pause
       return;
     }
@@ -224,36 +236,7 @@ export class Game {
   }
 
   private onWheel(e: WheelEvent): void {
-    if (this.mode === 'rack' && this.rackView) {
-      this.controller.nudgeFocus(-Math.sign(e.deltaY) * 0.1, this.rackView.minY, this.rackView.maxY);
-    }
-  }
-
-  /** En vue baie, survol à la souris : nom de l'équipement. */
-  private onRackMouseMove(e: MouseEvent): void {
-    if (this.mode !== 'rack' || !this.rackView) {
-      this.rackHover.classList.add('hidden');
-      return;
-    }
-    const ndc = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(ndc, this.renderer.camera);
-    const hit = ray.intersectObject(this.rackView.root, true).find((h) => h.object.name.startsWith('face:'));
-    const names: Record<string, string> = {
-      'face:PP-01': 'Panneau de brassage PP-01 — 24 ports vers les prises murales',
-      'face:SW-01': 'Switch SW-01 — 24 ports, manageable (CLI)',
-      'face:SW-02': 'Switch SW-02 — 24 ports, manageable (CLI)',
-      'face:RT-FW-01': 'Routeur / pare-feu RT-FW-01',
-      'face:SRV-01 (AD/DNS/DHCP/Fichiers)': 'Serveur SRV-01 — AD, DNS, DHCP, fichiers',
-      'face:brush': 'Passe-câbles à brosse',
-      'face:NAS-01 (Sauvegardes)': 'NAS-01 — sauvegardes nocturnes',
-    };
-    if (hit && names[hit.object.name]) {
-      this.rackHover.textContent = names[hit.object.name];
-      this.rackHover.style.left = `${e.clientX + 14}px`;
-      this.rackHover.style.top = `${e.clientY + 14}px`;
-      this.rackHover.classList.remove('hidden');
-    } else this.rackHover.classList.add('hidden');
+    if (this.mode === 'rack') this.rackCtl.onWheel(e);
   }
 
   // ------------------------------------------------------------------ modes
@@ -327,6 +310,7 @@ export class Game {
       this.state.satisfaction = 80;
       this.state.day = GameState.emptyDay();
       this.resetPlayer();
+      this.net.load(createInitialNetwork());
       this.world.doors.forEach((d) => {
         d.setOpen(false);
         d.locked = !!d.def.locked;
@@ -385,30 +369,25 @@ export class Game {
     } else this.requestLock();
   }
 
-  private async openRack(rack: RackBuild): Promise<void> {
+  private async openRack(rack: Rack3D): Promise<void> {
     if (this.mode !== 'playing') return;
     this.mode = 'rack';
-    this.rackView = rack;
     this.interactions.clear();
     this.hud.setCrosshairVisible(false);
     this.releasePointer();
-    const y = 1.5;
-    const pos = rack.front.clone().addScaledVector(rack.frontNormal, 1.0).setY(y);
-    const look = rack.front.clone().setY(y - 0.08);
+    // Assez près pour viser les ports (encore plus près au doigt).
+    const dist = this.touchMode && this.lastPointerType !== 'mouse' ? 0.36 : 0.46;
+    const y = 1.72;
+    const pos = rack.front.clone().addScaledVector(rack.frontNormal, dist).setY(y);
+    const look = rack.front.clone().setY(y);
     sound.play('open');
-    this.hud.setFocusHint(
-      this.touchMode && !this.wantsLock()
-        ? '<b>Vue baie</b> · Glissez pour monter / descendre · Touchez un équipement pour l’identifier · <button class="btn small" data-act="exit-focus">✕ Quitter</button>'
-        : '<b>Vue rapprochée de la baie</b> · Molette : monter / descendre · Survolez un équipement pour l’identifier · <kbd>Échap</kbd> ou <button class="btn small" data-act="exit-focus">✕ Quitter</button>',
-    );
+    this.rackCtl.enter();
     await this.controller.focusOn(pos, look, 0.7);
   }
 
   private exitRack(byKey: boolean): void {
     if (this.mode !== 'rack') return;
-    this.rackView = null;
-    this.rackHover.classList.add('hidden');
-    this.hud.setFocusHint(null);
+    this.rackCtl.exit();
     sound.play('close');
     void this.controller.restore();
     if (byKey && this.wantsLock()) {
@@ -468,10 +447,7 @@ export class Game {
       useMyPc: (view) =>
         void this.openApp(view, { title: 'HelpDesk Pro — Gestion des tickets', icon: '🎫', theme: 'theme-glpi' }, () => buildHelpdeskPro(this.state)),
       useUserPc: (desk, view) => this.useUserPc(desk, view),
-      inspectJack: (desk) => {
-        sound.play('click');
-        this.state.toast(`Prise ${desk.id} : le câble du ${desk.pcName} est branché. (Brassage et tests de câble à l’étape 2.)`, 'info', `Prise murale ${desk.id}`);
-      },
+      toggleJack: (jackId, hostId) => this.toggleJack(jackId, hostId),
       openRack: (rack) => void this.openRack(rack),
       inspectUps: () => this.state.toast('Sur secteur · Batterie 100 % · Autonomie estimée 25 min · Charge 38 %', 'ok', 'Onduleur 3000VA'),
       talkTo: (user) => void this.talkTo(user),
@@ -495,11 +471,42 @@ export class Game {
   }
 
   private useUserPc(desk: DeskDef, view: FocusView): void {
-    if (!desk.userId) {
-      this.state.toast(`${desk.pcName} est éteint : poste non attribué (installation d’un nouveau poste à l’étape 6).`, 'warn', desk.pcName);
+    const host = this.net.host(desk.pcName);
+    if (host && !host.powered) {
+      // Poste éteint (nouveau poste) : on l'allume.
+      host.powered = true;
+      this.world.screens.setState(desk.id, 'lock');
+      this.net.changed();
+      sound.play('click');
+      this.state.toast(`${desk.pcName} démarre… (poste non attribué : session locale)`, 'info', desk.pcName);
       return;
     }
-    void this.openApp(view, { title: `${desk.pcName} — Session Windows`, icon: '🪟', theme: 'theme-windows' }, () => buildUserDesktop(desk, this.state.clock.minutes));
+    void this.openApp(view, { title: `${desk.pcName} — Session Windows`, icon: '🪟', theme: 'theme-windows' }, () =>
+      buildUserDesktop(desk, this.state.clock.minutes, this.net),
+    );
+  }
+
+  /** Brancher / débrancher le câble d'un poste dans sa prise murale. */
+  private toggleJack(jackId: string, hostId: string): void {
+    const cable = this.net.cableAt(`${hostId}:eth0`);
+    if (!cable) {
+      this.state.toast(`Pas de câble entre ${hostId} et la prise ${jackId}.`, 'warn', `Prise ${jackId}`);
+      return;
+    }
+    sound.play('plug');
+    if (cable.b) {
+      this.net.unplug(cable.id);
+      this.state.toast(`Câble de ${hostId} débranché de la prise ${jackId}.`, 'info', `Prise ${jackId}`);
+    } else {
+      this.net.plug(cable.id, `${jackId}:jack`);
+      const l = this.net.link(`${hostId}:eth0`);
+      const msg = l.up
+        ? `Câble branché : lien établi avec ${l.peer?.replace(':', ' ')}.`
+        : l.reason === 'nocable' || l.reason === 'unwired'
+          ? 'Câble branché, mais la prise n’est pas brassée dans la baie : pas de lien.'
+          : 'Câble branché, mais pas de lien (port désactivé ou câble défectueux ?).';
+      this.state.toast(msg, l.up ? 'ok' : 'warn', `Prise ${jackId}`);
+    }
   }
 
   private useDoor(door: Door): void {
@@ -541,7 +548,6 @@ export class Game {
     if (this.app.isOpen) this.app.close();
     if (this.dialog.isOpen) this.dialog.hide();
     this.hud.setFocusHint(null);
-    this.rackView = null;
     void this.controller.restore(0.01);
     this.releasePointer();
     this.map.close();
@@ -579,6 +585,7 @@ export class Game {
       this.state,
       { x: this.controller.x, z: this.controller.z, yaw: this.controller.yaw, pitch: this.controller.pitch },
       this.world.doors.filter((d) => d.isOpen).map((d) => d.def.id),
+      this.net.state,
     );
     if (!silent) this.state.toast(ok ? 'Partie sauvegardée.' : 'Impossible de sauvegarder (stockage indisponible).', ok ? 'ok' : 'error', 'Sauvegarde');
     this.menus.refreshContinue();
@@ -591,6 +598,7 @@ export class Game {
       return;
     }
     applySave(this.state, data);
+    this.net.load(data.network ?? createInitialNetwork());
     this.controller.setPose(data.player.x, data.player.z, data.player.yaw, data.player.pitch);
     for (const d of this.world.doors) {
       const open = data.openDoors.includes(d.def.id);
