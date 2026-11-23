@@ -94,66 +94,75 @@ le bouton ✕ de la fenêtre, lui, reprend directement.
 
 ## 🧭 Plan de développement
 
-Chaque étape laisse le jeu lançable et jouable.
-
 | # | Étape | État |
 |---|---|---|
-| 1 | **Base 3D** : étage low poly, contrôles FPS, collisions, portes, raycast + surlignage, HUD, horloge, options, plan, sauvegarde | ✅ |
-| 2 | **Moteur réseau + baie** : PC → câble → prise → panneau → cordon → switch, brassage au clic, câbles 3D, LED réelles, tests | ✅ |
-| 3 | **Terminal switch** (CLI style IOS : abréviations, Tab, `?`, VLAN, shutdown, `write memory`), tests | ⏳ |
-| 4 | **HelpDesk Pro (GLPI-like)** : tickets, statuts, suivis, SLA, notifications, 5 scénarios réseau de bout en bout | ⏳ |
-| 5 | **Poste Windows** (ipconfig, ping, net use, gpupdate…) et **console AD**, scénarios comptes / lecteurs / impression | ⏳ |
-| 6 | **Inventaire et outils** (objet en main, testeur de câble, remplacement de pièces, prêt de PC) | ⏳ |
-| 7 | **PNJ** (dialogues, visites, téléphone), satisfaction, journées, bilan, progression | ⏳ |
-| 8 | **Tutoriel, bac à sable, sons, finitions**, 20+ scénarios | ⏳ |
+| 1 | Base 3D : étage, contrôles FPS, collisions, portes, raycast + surlignage, HUD, options, plan, sauvegarde | ✅ |
+| 2 | Moteur réseau + baie : câblage physique, brassage au clic, câbles 3D, LED réelles | ✅ |
+| 3 | Terminal switch (CLI Cisco IOS : abréviations, Tab, `?`, VLAN, trunk, shutdown, port-security, `write memory`, `reload`) | ✅ |
+| 4 | HelpDesk Pro (GLPI-like) : tickets, statuts, suivis, SLA, notifications, résolution vérifiée | ✅ |
+| 5 | Poste Windows (invite de commandes, réseau, Explorateur, Outlook, imprimantes, périphériques) + console AD | ✅ |
+| 6 | Inventaire et outils : objet en main, testeur de câble, câbles, toner, RAM, écran, HDMI, prêt de portable | ✅ |
+| 7 | PNJ (dialogues, visites, téléphone), satisfaction, journées, bilan, progression | ✅ |
+| 8 | Tutoriel, bac à sable, sons, évènements, **28 scénarios**, README | ✅ |
 
-### Ce qui marche déjà (étape 1)
+## 🕹️ Comment se joue une journée
 
-- Déplacement à la première personne (Pointer Lock), course, accroupissement, balancement de caméra désactivable,
-  collisions avec murs, portes et meubles.
-- Viseur central, **objets interactifs surlignés** à moins de 2 m, bulle « E — … ».
-- Portes animées ; la **salle serveur est verrouillée** : on badge pour entrer.
-- Votre PC ouvre **HelpDesk Pro** (caméra qui s'approche en douceur de l'écran) ; les postes utilisateurs
-  ouvrent un bureau Windows simulé (contenu complet à l'étape 5).
-- **Vue rapprochée de la baie** : molette pour monter/descendre, survol des équipements pour les identifier.
-- Écrans du décor dynamiques (verrouillage, bureau, écran noir, erreur, « aucun signal ») — pour voir les pannes de loin.
-- PNJ low poly assis à leur bureau, à qui l'on peut parler (E), avec personnalité.
-- Horloge de jeu 8 h 30 → 17 h 30 (≈ 10 min réelles), jauge d'énergie + machine à café, bilan de fin de journée.
-- Plan de l'étage (M), notifications en haut à droite, sons synthétisés (Web Audio, aucun fichier).
-- Options : sensibilité souris, champ de vision, qualité graphique (basse / moyenne / haute), son, FPS.
-- Sauvegarde / chargement dans `localStorage` (menu pause) + sauvegarde auto en fin de journée.
+1. **Les demandes arrivent** de 8 h 45 à 16 h 50 : notification HelpDesk Pro, **téléphone qui sonne** sur votre bureau
+   (décrochez avant le répondeur !), ou **utilisateur qui vient vous voir** au helpdesk.
+2. **HelpDesk Pro** (votre PC) : prenez en charge, prévenez l’utilisateur (suivi), mettez en attente, escaladez au N2…
+   Le **SLA** dépend de la priorité (Très haute 1 h, Haute 2 h, Moyenne 4 h, Basse 8 h).
+3. **Enquêtez** : parlez à l’utilisateur (description, ce qu’il a fait avant), regardez son écran, ses LED,
+   lancez `ipconfig`, `ping`, `net use`… sur son poste, survolez les ports de la baie, `show vlan brief` sur le switch.
+4. **Réparez pour de vrai** : câble, brassage, CLI du switch, AD, paramètres Windows, Outlook, imprimante, matériel.
+5. **Résolvez le ticket** : le jeu vérifie l’état réel du monde. Si rien n’est réglé, l’utilisateur **rouvre** le ticket.
+6. **Bilan** à 17 h 30 : tickets, SLA, satisfaction, XP, remarque du chef. Sauvegarde automatique.
 
-### Ce qui marche en plus (étape 2)
+Progression : **Stagiaire → Technicien N1 (300 XP) → Technicien N2 (900 XP) → Admin réseau (2000 XP)** ;
+chaque grade débloque des pannes plus complexes. Énergie : le café la remonte. Évènement : **coupure de courant**
+(et un switch qui redémarre avec sa config non sauvegardée…).
 
-- **Moteur réseau réel** (`src/network/`) : câblage physique, VLAN access/trunk, DHCP relayé par le routeur, APIPA,
-  ping avec passerelle et routage inter-VLAN, table MAC, config courante / config de démarrage.
-- **Baie interactive** : 1 panneau de brassage 24 ports, 2 switchs (Fa0/1-24 + Gi0/1-2), routeur, serveur.
-  - Survol d'un port : « PP-01 port 12 → prise B-12 · non brassé », « SW-01 Fa0/5 · VLAN 10 · connecté → PC-COM-01 ».
-  - **Poser un cordon** : choisir la couleur et la longueur dans la barre du bas, cliquer un port libre puis un second port.
-    Un cordon trop court est refusé.
-  - **Débrancher** : clic droit sur un cordon ou un port occupé (au doigt : toucher le port puis « Débrancher »).
-  - **LED réelles** : vert = lien, clignotement = activité, orange = problème, éteint = rien.
-- **Sous les bureaux** : se baisser (C) et viser la prise ou le câble → **E** pour débrancher / rebrancher le câble du PC.
-- **Écrans** : un poste sans réseau affiche une bulle « Câble réseau débranché » ou « Pas d'accès Internet » (APIPA).
-- Sur un poste utilisateur, la fenêtre Windows affiche l'état de la carte Ethernet (IP, masque, passerelle, DNS, MAC).
-- Le réseau est sauvegardé avec la partie.
+### Outils à votre disposition
 
-**Exercice pour tester** : le bureau **B-12** (open space Commercial, près du couloir) est un poste neuf, **éteint**,
-dont la prise n'est **pas brassée**. Allumez-le (E sur le PC) : pas de réseau. Allez en salle serveur, ouvrez la baie,
-reliez **PP-01 port 12** à un port libre de **SW-01 en VLAN 10** (Fa0/12 à Fa0/16 : survolez pour vérifier),
-puis revenez : le poste a une adresse en 192.168.10.x.
+| Où | Quoi |
+|---|---|
+| **Votre PC** (HelpDesk Pro) | Tickets · **Annuaire AD** (déverrouiller, réinitialiser un mot de passe, activer/désactiver, groupes, créer un compte) · Parc (IP, VLAN, configs non sauvegardées) · **Prêts** (fiche de prêt) · **Terminal SSH** vers les switchs · Base de connaissances + mémo de commandes · Statistiques |
+| **Baie** (salle serveur) | Brassage au clic, cordons (couleur, longueur, stock), **console** de SW-01 / SW-02 (bouton ou clic sur la façade du switch) |
+| **Poste utilisateur** | Connexion (compte verrouillé, changement de mot de passe), **invite de commandes**, paramètres réseau (carte, DHCP / IP fixe), Explorateur (lecteurs réseau), Outlook (profil, quota, boîte partagée, phishing), imprimantes (file d’attente, par défaut, page de test), gestionnaire de périphériques, redémarrer / fermer la session |
+| **Sous les bureaux** (C) | Prise murale : brancher / débrancher, **tester** le câble, le **remplacer** |
+| **Arrière de l’unité centrale** | Câble HDMI, redémarrage, ouverture du boîtier (tournevis), ajout de RAM |
+| **Étagère / I** | Stock : câbles RJ45, cordons, testeur, tournevis, RAM, écran, HDMI, toner, portable de prêt… (réassort tous les 3 jours). L’objet sélectionné (1-9, molette) apparaît dans votre main ; visez un équipement et appuyez sur E pour l’utiliser. |
 
-#### Plan d'adressage
+### Commandes du switch reconnues
 
-| VLAN | Nom | Réseau | Passerelle (RT-FW-01) | Ports |
-|---|---|---|---|---|
-| 10 | UTILISATEURS | 192.168.10.0/24 | 192.168.10.254 | SW-01 Fa0/5-16 |
-| 20 | COMPTA | 192.168.20.0/24 | 192.168.20.254 | SW-01 Fa0/1-4, 17-20 |
-| 30 | IMPRIMANTES | 192.168.30.0/24 | 192.168.30.254 | SW-02 Fa0/2-8 |
-| 99 | ADMINISTRATION | 192.168.99.0/24 | 192.168.99.254 | SW-02 Fa0/1, 9-20, 24 |
+`enable`, `disable`, `configure terminal`, `interface fa0/x` / `gi0/x`, `interface range fa0/1 - 8, fa0/10`,
+`interface vlan 99` + `ip address`, `switchport mode access|trunk`, `switchport access vlan N`,
+`switchport trunk allowed vlan [add|remove|all|none] …`, `switchport trunk native vlan N`,
+`switchport port-security [maximum N | violation …]`, `spanning-tree portfast`, `spanning-tree bpduguard enable`,
+`shutdown` / `no shutdown`, `description …`, `vlan N` + `name …`, `no vlan N`, `hostname …`, `ip default-gateway …`,
+`do …`, `exit`, `end`, Ctrl+Z, `show vlan [brief]`, `show interfaces status|trunk|fa0/x`, `show ip interface brief`,
+`show mac address-table`, `show running-config [interface …]`, `show startup-config`, `show version`, `show history`,
+`ping`, `copy running-config startup-config`, `write memory`, `reload`.
+Abréviations (`conf t`, `int fa0/5`, `sh vlan br`, `no shut`, `wr`), **Tab**, **?**, ↑/↓, et vrais messages d’erreur IOS.
 
-Serveur SRV-01 (AD/DNS/DHCP) : 192.168.99.10 · SW-01 : 192.168.99.2 · SW-02 : 192.168.99.3 · imprimante IMP-COMPTA : 192.168.30.10.
-Trunks : RT-FW-01 Gi0/0 ↔ SW-01 Gi0/1, SW-01 Gi0/2 ↔ SW-02 Gi0/1.
+### Les 28 scénarios
+
+| Grade | Scénarios |
+|---|---|
+| Stagiaire | câble débranché · écran simplement éteint (faux ticket) · écran noir « aucun signal » (HDMI ou écran HS) · compte verrouillé + mot de passe oublié · file d’impression bloquée · toner vide · lecteur S: disparu · profil Outlook corrompu · boîte aux lettres pleine |
+| Technicien N1 | mauvais VLAN · port en shutdown · APIPA (VLAN 1) · groupe AD manquant (+ réouverture de session) · carte réseau désactivée · IP statique erronée · câble défectueux (testeur) · déménagement : prise non brassée · **phishing** (quiz des indices, bloquer, et si quelqu’un clique : réinitialiser le mot de passe) · boîte partagée (groupe AD + Outlook) · poste lent (RAM) · prêt de portable · directeur pressé (priorité très haute, imprimante par défaut) |
+| Technicien N2 | imprimante dans le mauvais VLAN · **boucle réseau** (mini-switch sur deux prises) · **config perdue après redémarrage** (plusieurs tickets, `write memory` obligatoire) · VPN en télétravail (téléphone, groupe GG_VPN) · **nouvel arrivant** (compte AD, brassage, VLAN, poste, session) |
+| Admin réseau | VLAN retirée des VLAN autorisées sur le trunk |
+
+**Ajouter un scénario** : créer un fichier `src/data/scenarios/NN-mon-scenario.ts` qui exporte
+`defineScenario({ ... })` (textes, catégorie, priorité, `inject` qui provoque la panne, `isResolved` qui vérifie
+la réparation, dialogues, indices, solution, XP, et `solve` pour le test automatique). Il est chargé automatiquement
+et testé par `npm test`.
+
+### Modes
+
+- **Tutoriel** au lancement d’une nouvelle partie : Bernard, votre chef, vous guide sur un premier ticket.
+- **Bac à sable** (écran d’accueil) : pas de chrono ni de tickets automatiques, toutes les portes ouvertes ;
+  déclenchez n’importe quelle panne dans HelpDesk Pro → « Créer une panne ».
 
 ## 🏗️ Architecture
 
@@ -166,11 +175,13 @@ helpdesk-simulator/
     Game.ts                  chef d'orchestre : modes de jeu, interactions, sauvegarde
     engine/                  Renderer (lumières, qualité), FirstPersonController, InteractionSystem (raycast, surlignage)
     world/                   construction de l'étage, mobilier, portes, PNJ, écrans, collisions, instancing, chargeur GLTF
-    network/                 moteur réseau : câbles, switchs, VLAN, DHCP, ping, table MAC — sans Three.js
-    cli/                     (étape 3) parseur IOS, autocomplétion, aide — sans Three.js
-    apps/                    overlays HTML : HelpDesk Pro, poste Windows, puis AD, terminal, vue baie
-    tickets/                 (étape 4) générateur, vérification de résolution, SLA, satisfaction
-    data/                    plan de l'étage, utilisateurs, puis scenarios/ et équipements
+    network/                 moteur réseau : câbles, switchs, VLAN, DHCP, boucles, ping, table MAC — sans Three.js
+    cli/                     interpréteur Cisco IOS (arbre de commandes, abréviations, Tab, ?) — sans Three.js
+    sim/                     Active Directory, postes Windows, invite de commandes, imprimantes, stock — sans Three.js
+    tickets/                 tickets : création, SLA, satisfaction, résolution vérifiée — sans Three.js
+    apps/                    overlays HTML : HelpDesk Pro, console AD, poste Windows, terminaux, baie, stock
+    game/                    tutoriel
+    data/                    plan, utilisateurs, baie, scenarios/ (un fichier par scénario)
     state/                   état global (source de vérité), horloge, options, sauvegarde
     ui/                      HUD, menus, plan, dialogues, notifications
     audio/                   sons synthétisés
@@ -202,8 +213,18 @@ Clés disponibles : `coffee`, `copier`, `shelf`.
 npm test
 ```
 
-- collisions (glisser le long d'un mur, ne pas traverser, portes ouvertes) et horloge de jeu ;
-- réseau : chemin physique PC → prise → panneau → switch, débrancher / rebrancher, prise non brassée, câble défectueux,
-  carte désactivée, DHCP par VLAN, shutdown, APIPA, VLAN inexistante ou erronée, trunk coupé, VLAN interdite sur le trunk,
-  ping (passerelle, inter-VLAN, IP inexistante, mauvaise passerelle, depuis un switch), table MAC,
-  perte de config au redémarrage sans `write memory`, longueur des cordons.
+**124 tests** Vitest :
+
+- **chaque scénario** (28) : la panne est injectée, le ticket ne peut pas être résolu sans intervention
+  (l’utilisateur le rouvre), puis la solution du technicien est appliquée et reconnue ;
+- **CLI IOS** : modes et invites, abréviations, erreurs `^`, `Incomplete`, `Ambiguous`, création auto de VLAN,
+  shutdown/no shutdown et messages LINK/LINEPROTO, trunk allowed, err-disable, port-security, `show …`,
+  `?`, Tab, perte de config au `reload` sans `write memory`, `copy run start`, `wr` ;
+- **réseau** : chemin physique, débrancher, prise non brassée, câble défectueux, carte désactivée, DHCP par VLAN,
+  APIPA, VLAN inexistante, trunk coupé, VLAN interdite, ping (passerelle, inter-VLAN, Internet, mauvaise passerelle,
+  depuis un switch), table MAC, **boucle** avec un mini-switch, sauvegarde ;
+- **AD / Windows** : création de compte, stratégie de mot de passe, verrouillage, partages et **jeton de session**,
+  `gpupdate`, `net use` (erreurs 5, 53, 85), `ipconfig` (/all, /release, /renew, APIPA, média déconnecté), `ping`
+  par nom, `nslookup`, `net user /domain`, `systeminfo`, impression, stock ;
+- **tickets** : SLA, satisfaction, clôture, panne générale multi-tickets, escalade ;
+- collisions et horloge.

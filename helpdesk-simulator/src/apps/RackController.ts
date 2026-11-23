@@ -46,6 +46,7 @@ export class RackController {
     private tooltip: HTMLElement,
     private toast: Toast,
     private touchUi: () => boolean,
+    private hooks: { usePatch: () => boolean; returnPatch: () => void; openConsole: (sw: string) => void; patchStock: () => number },
   ) {}
 
   enter(): void {
@@ -86,6 +87,7 @@ export class RackController {
     else if (act === 'len') this.length = Number(val);
     else if (act === 'cancel') this.escape();
     else if (act === 'unplug' && this.pendingUnplug) this.unplug(this.pendingUnplug);
+    else if (act === 'console') return this.hooks.openConsole(val);
     sound.play('click');
     this.render();
   }
@@ -161,6 +163,13 @@ export class RackController {
     if (!ref) {
       const cid = this.cableUnder(x, y);
       if (cid) this.pendingUnplug = cid;
+      else {
+        // Clic sur la façade d'un switch : on ouvre sa console.
+        const ndc = new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+        this.raycaster.setFromCamera(ndc, this.camera);
+        const face = this.raycaster.intersectObject(this.rack.root, true).find((h) => h.object.name.startsWith('face:SW-'));
+        if (face) return this.hooks.openConsole(face.object.name.slice(5));
+      }
       this.render();
       return;
     }
@@ -203,8 +212,13 @@ export class RackController {
       sound.play('denied');
       return;
     }
+    if (!this.hooks.usePatch()) {
+      this.toast('Plus aucun cordon de brassage en stock (réassort dans quelques jours).', 'warn', 'Brassage');
+      return;
+    }
     const r = this.net.connect(a, b, { kind: 'patch', color: this.color, length: this.length });
     if (!r.ok) {
+      this.hooks.returnPatch();
       this.toast(r.error, 'error', 'Brassage');
       return;
     }
@@ -217,6 +231,7 @@ export class RackController {
   private unplug(cableId: string): void {
     const info = this.cableInfo(cableId);
     this.net.disconnect(cableId);
+    this.hooks.returnPatch();
     this.pendingUnplug = null;
     sound.play('plug');
     this.toast(info, 'info', 'Cordon débranché');
@@ -283,7 +298,7 @@ export class RackController {
     }
     this.hud.setFocusHint(
       `<div class="rackbar">
-        <div class="rackbar-row"><b>Baie réseau</b><span class="rackbar-sep"></span>Cordon : ${colors}<span class="rackbar-sep"></span>${lengths}<span class="rackbar-sep"></span><button class="btn small" data-act="exit-focus">✕ Quitter</button></div>
+        <div class="rackbar-row"><b>Baie réseau</b><span class="rackbar-sep"></span>Cordon : ${colors}<span class="rackbar-sep"></span>${lengths}<span class="rackbar-sep"></span><span class="rackbar-sep"></span>Cordons en stock : <b>${this.hooks.patchStock()}</b><span class="rackbar-sep"></span><button class="btn small" data-rack="console:SW-01">💻 Console SW-01</button><button class="btn small" data-rack="console:SW-02">💻 Console SW-02</button><button class="btn small" data-act="exit-focus">✕ Quitter</button></div>
         <div class="rackbar-row rackbar-status">${status}</div>
       </div>`,
     );

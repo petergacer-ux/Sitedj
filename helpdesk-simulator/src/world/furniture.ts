@@ -65,8 +65,10 @@ export function buildChair(ctx: BuildCtx, frame: THREE.Matrix4, lx: number, lz: 
 
 export interface DeskBuild {
   root: THREE.Group;
-  /** Groupe interactif « PC » (écran + tour). */
+  /** Groupe interactif « PC » (écran). */
   pc: THREE.Group;
+  /** Unité centrale. */
+  tower: THREE.Group;
   /** Prise murale interactive. */
   jack: THREE.Group;
   screen: Screen;
@@ -116,13 +118,16 @@ export function buildDesk(
   screenMesh.position.set(0, 1.08, -0.184);
   screenMesh.name = 'screen';
   pc.add(screenMesh);
-  const tower = box([0.2, 0.44, 0.45], mat(C.pc), [0.48, 0.22, -0.12]);
-  tower.name = 'tower';
-  pc.add(tower);
+  root.add(pc);
+  // Unité centrale : interactive séparément (arrière du PC : câbles, ouverture du boîtier)
+  const tower = new THREE.Group();
+  tower.name = `tower:${opts.id}`;
+  tower.add(box([0.2, 0.44, 0.45], mat(C.pc), [0.48, 0.22, -0.12]));
   const led = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.005), new THREE.MeshBasicMaterial({ color: 0x3cff6a }));
   led.position.set(0.48, 0.38, 0.106);
-  pc.add(led);
-  root.add(pc);
+  led.name = 'power-led';
+  tower.add(led);
+  root.add(tower);
 
   // --- Prise murale RJ45 étiquetée + câble du poste ---
   // Placée entre les pieds du bureau, à gauche de la tour pour rester visible en se baissant.
@@ -137,7 +142,7 @@ export function buildDesk(
   root.updateMatrixWorld(true);
   const screenCenter = new THREE.Vector3(0, 1.08, -0.18).applyMatrix4(frame);
   const screenViewPos = new THREE.Vector3(0, 1.1, 0.42).applyMatrix4(frame);
-  return { root, pc, jack, screen, screenCenter, screenViewPos, frame, cablePlugged: jackParts.plugged, cableLoose: jackParts.loose };
+  return { root, pc, tower, jack, screen, screenCenter, screenViewPos, frame, cablePlugged: jackParts.plugged, cableLoose: jackParts.loose };
 }
 
 /**

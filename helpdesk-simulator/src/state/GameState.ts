@@ -21,7 +21,9 @@ export type GameEvents = {
 };
 
 export interface DayStats {
+  ticketsReceived?: number;
   ticketsResolved: number;
+  reopened?: number;
   slaOk: number;
   slaMissed: number;
   coffees: number;
@@ -37,6 +39,9 @@ export class GameState {
   satisfaction = 80;
   /** Bureaux (ids de prise) ayant un ticket ouvert — alimenté à l'étape 4. */
   openTicketDesks = new Set<string>();
+  openTicketCount = 0;
+  /** Mode bac à sable : pas de chrono, pas de tickets aléatoires. */
+  sandbox = false;
   hasBadge = true;
   day: DayStats = GameState.emptyDay();
   lastCoffeeAt = -999;
@@ -84,7 +89,7 @@ export class GameState {
 
   /** Avance le temps (appelé à chaque image hors pause). */
   update(dt: number): void {
-    const tick = this.clock.advance(dt);
+    const tick = this.clock.advance(this.sandbox ? 0 : dt);
     if (tick.minuteChanged) {
       // L'énergie baisse doucement : ~ -8 par heure de jeu.
       this.energy = Math.max(0, this.energy - 8 / 60);

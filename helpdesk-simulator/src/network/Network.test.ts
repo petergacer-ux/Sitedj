@@ -215,3 +215,40 @@ describe('longueur des cordons', () => {
     expect(patchLengthOk(a, b, 1)).toBe(true);
   });
 });
+
+describe('boucle et Internet', () => {
+  it('un mini-switch branché sur deux prises crée une boucle (tempête de broadcast)', () => {
+    net.state.switches['SW-PERSO'] = {
+      id: 'SW-PERSO',
+      unmanaged: true,
+      rebooting: false,
+      errDisabled: [],
+      running: { hostname: 'SW-PERSO', vlans: { 1: 'default' }, ports: {}, mgmt: null },
+      startup: { hostname: 'SW-PERSO', vlans: { 1: 'default' }, ports: {}, mgmt: null },
+    };
+    for (let i = 1; i <= 5; i++) {
+      net.state.switches['SW-PERSO'].running.ports[`p${i}`] = { shutdown: false, mode: 'access', accessVlan: 1, nativeVlan: 1, allowedVlans: null, description: '' };
+    }
+    // Le PC B-07 passe par le mini-switch, qui est relié aux prises B-07 et B-08
+    const pcCable = net.cableAt('PC-COM-03:eth0')!;
+    net.state.cables = net.state.cables.filter((c) => c !== pcCable && c !== net.cableAt('PC-COM-04:eth0'));
+    net.connect('PC-COM-03:eth0', 'SW-PERSO:p1', { kind: 'drop' });
+    net.connect('SW-PERSO:p4', 'B-07:jack', { kind: 'drop' });
+    net.connect('SW-PERSO:p5', 'B-08:jack', { kind: 'drop' });
+    expect(net.portInLoop('SW-01', 'Fa0/7')).toBe(true);
+    expect(net.hostIp('PC-COM-01').status).toBe('apipa'); // toute la VLAN 10 est touchée
+    expect(net.hostIp('PC-COMPTA-01').status).toBe('dhcp'); // la VLAN 20 non
+    // On coupe un des deux ports : la boucle disparaît
+    net.state.switches['SW-01'].running.ports['Fa0/8'].shutdown = true;
+    net.changed();
+    expect(net.portInLoop('SW-01', 'Fa0/7')).toBe(false);
+    expect(net.hostIp('PC-COM-03').status).toBe('dhcp');
+  });
+
+  it('Internet joignable via la passerelle', () => {
+    expect(net.ping('PC-COMPTA-01', '8.8.8.8')).toEqual({ result: 'ok', ttl: 117 });
+    net.state.hosts['PC-COMPTA-01'].ip = { mode: 'static', ip: '192.168.20.50', mask: '255.255.255.0', gateway: '', dns: '' };
+    net.changed();
+    expect(net.ping('PC-COMPTA-01', '8.8.8.8').result).toBe('unreachable');
+  });
+});

@@ -32,6 +32,10 @@ export interface SwitchPortConfig {
   /** null = toutes les VLAN autorisées sur le trunk. */
   allowedVlans: number[] | null;
   description: string;
+  /** Port-security (stockée et affichée ; violation → err-disable). */
+  portSecurity?: { enabled: boolean; maximum: number; violation: 'shutdown' | 'restrict' | 'protect' };
+  portfast?: boolean;
+  bpduguard?: boolean;
 }
 
 export interface SwitchConfig {
@@ -50,6 +54,8 @@ export interface SwitchState {
   errDisabled: string[];
   /** Le switch est en train de redémarrer. */
   rebooting: boolean;
+  /** Petit switch « perso » non administrable (pas de CLI). */
+  unmanaged?: boolean;
 }
 
 export interface RouterSubif {

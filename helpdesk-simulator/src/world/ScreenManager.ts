@@ -8,7 +8,7 @@ import { formatTime } from '../state/clock';
 
 export type NetIcon = 'ok' | 'limited' | 'none';
 
-export type ScreenState = 'lock' | 'desktop' | 'off' | 'error' | 'helpdesk' | 'tv' | 'nosignal';
+export type ScreenState = 'lock' | 'desktop' | 'off' | 'error' | 'helpdesk' | 'tv' | 'nosignal' | 'boot';
 
 export interface Screen {
   id: string;
@@ -90,6 +90,17 @@ export class ScreenManager {
         ctx.textAlign = 'center';
         ctx.fillText('Aucun signal', W / 2, H / 2 + 5);
         break;
+      case 'boot': {
+        ctx.fillStyle = '#0b3d91';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#fff';
+        ctx.font = '40px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('⊞', W / 2, H / 2 - 10);
+        ctx.font = '14px "Segoe UI", Arial';
+        ctx.fillText('Redémarrage…', W / 2, H / 2 + 30);
+        break;
+      }
       case 'lock': {
         const g = ctx.createLinearGradient(0, 0, W, H);
         g.addColorStop(0, '#0b3d91');
@@ -101,7 +112,14 @@ export class ScreenManager {
         ctx.font = '300 46px "Segoe UI", Arial';
         ctx.fillText(time, 20, H - 50);
         ctx.font = '15px "Segoe UI", Arial';
-        ctx.fillText(s.userName ? `${s.userName} — verrouillé` : 'Ctrl+Alt+Suppr pour ouvrir', 22, H - 26);
+        ctx.fillText(s.userName ? `${s.userName}` : 'Ctrl+Alt+Suppr pour ouvrir', 22, H - 26);
+        if (s.message) {
+          ctx.fillStyle = '#c62828';
+          ctx.fillRect(14, 30, W - 28, 30);
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 12px Arial';
+          ctx.fillText(s.message, 22, 50);
+        }
         ctx.font = '11px Arial';
         ctx.globalAlpha = 0.7;
         ctx.fillText(s.pcName, 22, 20);

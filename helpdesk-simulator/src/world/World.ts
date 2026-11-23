@@ -28,7 +28,8 @@ import { Rack3D } from './Rack3D';
 import { makeLabel } from './labels';
 import { C, mat } from './materials';
 import { ModelLoader } from './ModelLoader';
-import { animateNpc, buildSeatedNpc, type NpcBuild } from './npc';
+import { animateNpc, buildSeatedNpc, buildStandingNpc, type NpcBuild } from './npc';
+import type { Office } from '../sim/Office';
 import { ScreenManager } from './ScreenManager';
 import { StaticBatcher } from './StaticBatcher';
 
@@ -40,6 +41,10 @@ export interface FocusView {
 export interface WorldActions {
   useMyPc(view: FocusView): void;
   useUserPc(desk: DeskDef, view: FocusView): void;
+  /** Arrière de l'unité centrale (câbles, ouverture du boîtier). */
+  useTower(deskId: string, host: string): void;
+  talkToBoss(): void;
+  talkToVisitor(user: UserDef): void;
   /** Prise murale : brancher / débrancher le câble (jackId = B-01, HD-01, P-01). */
   toggleJack(jackId: string, hostId: string): void;
   openRack(rack: Rack3D): void;
@@ -66,12 +71,18 @@ export class World {
   /** Câbles de poste visibles : prise → [branché, débranché]. */
   private jackCables = new Map<string, { host: string; plugged: THREE.Mesh; loose: THREE.Mesh }>();
   private npcs: NpcBuild[] = [];
+  /** PNJ assis par login (pour les cacher quand ils se lèvent). */
+  private seated = new Map<string, NpcBuild>();
+  private visitor: { user: string; npc: NpcBuild } | null = null;
+  private boss!: NpcBuild;
+  private miniSwitch!: THREE.Group;
   private time = 0;
 
   constructor(
     private interactions: InteractionSystem,
     private actions: WorldActions,
     private net: Network,
+    private office: Office,
   ) {
     this.root.name = 'world';
   }
@@ -122,6 +133,7 @@ export class World {
       label: () => 'E — Utiliser le PC (HelpDesk Pro)',
       onInteract: () => A.useMyPc({ pos: mine.screenViewPos, look: mine.screenCenter }),
     });
+    I.register({ id: 'tower:HD-01', object: mine.tower, label: () => 'E — Arrière de l’unité centrale', onInteract: () => A.useTower('HD-01', MY_DESK.pcName), maxDistance: 1.8 });
     const phone = buildPhone(mine.root, -0.45, -0.1);
     I.register({ id: 'phone', object: phone, label: () => 'E — Décrocher le téléphone', onInteract: () => A.phone() });
     // Plaque sur le chant avant du bureau
@@ -152,6 +164,7 @@ export class World {
         onInteract: () => A.useUserPc(d, { pos: desk.screenViewPos, look: desk.screenCenter }),
       });
       this.registerJack(d.id, d.pcName, desk);
+      I.register({ id: `tower:${d.id}`, object: desk.tower, label: () => 'E — Arrière de l’unité centrale', onInteract: () => A.useTower(d.id, d.pcName), maxDistance: 1.8 });
       if (d.printer) {
         // Petit meuble à côté du bureau, avec l'imprimante dessus
         solid.box(mat(0x7a7f87), [0.5, 0.6, 0.45], [-1.0, 0.3, -0.15], desk.frame);
@@ -163,6 +176,7 @@ export class World {
         const npc = buildSeatedNpc(user);
         desk.root.add(npc.group);
         this.npcs.push(npc);
+        this.seated.set(user.id, npc);
         I.register({ id: `npc:${user.id}`, object: npc.group, label: () => `E — Parler à ${user.firstName}`, onInteract: () => A.talkTo(user) });
       }
     }
@@ -214,6 +228,39 @@ export class World {
       buildPlant(ctx, x, z);
     }
 
+    // --- Bernard, le chef de service, debout dans le bureau helpdesk ---
+    this.boss = buildStandingNpc({ shirt: 0x5d4037, skin: 0xe8b996, hair: 0x7a7a7a, pants: 0x263238 }, 'boss');
+    this.boss.group.position.set(6.8, 0, 2.2);
+    this.boss.group.rotation.y = Math.PI / 2 + 0.4;
+    this.root.add(this.boss.group);
+    this.npcs.push(this.boss);
+    this.colliders.push({ minX: 6.55, maxX: 7.05, minZ: 1.95, maxZ: 2.45 });
+    I.register({ id: 'boss', object: this.boss.group, label: () => 'E — Parler à Bernard (chef de service)', onInteract: () => A.talkToBoss() });
+
+    // --- Mini-switch « perso » (scénario de boucle), sous le bureau B-07 ---
+    this.miniSwitch = new THREE.Group();
+    const msBody = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.035, 0.1), mat(0xeeeeee));
+    msBody.position.set(0, 0.02, 0);
+    const msLeds = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.006, 0.004), new THREE.MeshBasicMaterial({ color: 0xffa000 }));
+    msLeds.position.set(0, 0.03, 0.051);
+    msLeds.name = 'ms-leds';
+    this.miniSwitch.add(msBody, msLeds);
+    for (const [tx, tz] of [
+      [0.12, 0.92],
+      [3.62, 0.92],
+    ]) {
+      const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0.05, 0.02, -0.05), new THREE.Vector3(tx * 0.5, 0.01, -0.2), new THREE.Vector3(tx, 0.01, -0.4), new THREE.Vector3(tx, 0.3, -tz + 0.5)]);
+      const cable = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, 0.005, 5), mat(0xf2c230));
+      cable.name = 'ms-cable';
+      this.miniSwitch.add(cable);
+    }
+    const d7 = DESKS.find((x) => x.id === 'B-07')!;
+    this.miniSwitch.position.set(d7.x - 0.3, 0, d7.z - 0.05);
+    this.miniSwitch.rotation.y = Math.PI;
+    this.miniSwitch.visible = false;
+    this.root.add(this.miniSwitch);
+    I.register({ id: 'miniswitch', object: this.miniSwitch, label: () => (this.miniSwitch.visible ? 'E — Examiner le petit switch perso' : null), onInteract: () => A.printer('MINI-SWITCH'), maxDistance: 1.8 });
+
     // On fige les objets statiques en InstancedMesh.
     const propsGroup = props.build('props', true, true);
     const solidGroup = solid.build('solid', true, true);
@@ -237,8 +284,11 @@ export class World {
       id: `jack:${jackId}`,
       object: parts.jack,
       label: () => {
+        const atJack = this.net.cableAt(`${jackId}:jack`);
+        if (atJack && atJack.a.startsWith('SW-PERSO')) return `E — Débrancher le câble du mini-switch (prise ${jackId})`;
         const c = this.net.cableAt(`${hostId}:eth0`);
         if (!c) return `E — Prise ${jackId} (aucun câble)`;
+        if (c.b && c.b !== `${jackId}:jack`) return `E — Prise ${jackId}`;
         return c.b ? `E — Débrancher le câble de la prise ${jackId}` : `E — Brancher le câble dans la prise ${jackId}`;
       },
       onInteract: () => this.actions.toggleJack(jackId, hostId),
@@ -264,16 +314,75 @@ export class World {
       parts.loose.visible = !!c && !c.b;
     });
     this.rack.syncCables(this.net);
+    const ms = this.net.state.switches['SW-PERSO'];
+    this.miniSwitch.visible = !!ms && this.net.state.cables.some((c) => c.a.startsWith('SW-PERSO') || c.b?.startsWith('SW-PERSO'));
+    this.syncScreens();
+  }
+
+  /** État des écrans selon le réseau ET le poste (écran éteint, câble vidéo, session, redémarrage…). */
+  syncScreens(): void {
     const hosts: [string, string][] = DESKS.map((d) => [d.id, d.pcName]);
     hosts.push(['HD-01', MY_DESK.pcName]);
     for (const [deskId, hostId] of hosts) {
       const info = this.net.hostIp(hostId);
-      if (info.status === 'off') {
-        this.screens.setState(deskId, 'off');
-        continue;
-      }
-      this.screens.setNet(deskId, info.status === 'dhcp' || info.status === 'static' ? 'ok' : info.status === 'apipa' ? 'limited' : 'none');
+      const pc = this.office.pc(hostId);
+      const screen = this.screens.get(deskId);
+      if (!screen || !pc) continue;
+      const u = this.office.user(pc.user);
+      screen.userName = u ? `${u.firstName} ${u.lastName}` : '';
+      let state: Parameters<ScreenManager['setState']>[1];
+      let msg: string | undefined;
+      if (info.status === 'off' || !pc.monitorOn || pc.monitorDead || !pc.powerCable) state = 'off';
+      else if (!pc.videoCable) state = 'nosignal';
+      else if (pc.rebootUntil !== null) state = 'boot';
+      else if (!u) state = 'lock';
+      else if (u.locked || !u.enabled) {
+        state = 'lock';
+        msg = u.locked ? 'Le compte est verrouillé' : 'Compte désactivé';
+      } else if (deskId === 'HD-01') state = 'helpdesk';
+      else if (pc.outlook.profileCorrupt) {
+        state = 'error';
+        msg = 'Impossible de démarrer Microsoft Outlook. Impossible d’ouvrir la fenêtre Outlook.';
+      } else state = 'desktop';
+      if (screen.state !== state || screen.message !== msg) this.screens.setState(deskId, state, msg);
+      this.screens.setNet(deskId, info.status === 'dhcp' || info.status === 'static' ? (pc.released ? 'none' : 'ok') : info.status === 'apipa' ? 'limited' : 'none');
+      // LED de la tour : éteinte si le PC est éteint
+      const tower = this.desks.get(deskId)?.tower;
+      const led = tower?.getObjectByName('power-led') as THREE.Mesh | undefined;
+      if (led) (led.material as THREE.MeshBasicMaterial).color.setHex(info.status === 'off' || !pc.powerCable ? 0x222222 : 0x3cff6a);
     }
+  }
+
+  /** Un utilisateur vient voir le technicien : il se lève et attend au helpdesk. */
+  showVisitor(user: UserDef): void {
+    this.hideVisitor();
+    const seated = this.seated.get(user.id);
+    if (seated) seated.group.visible = false;
+    const npc = buildStandingNpc(user, `visitor:${user.id}`);
+    npc.group.position.set(5.2, 0, 4.4);
+    npc.group.rotation.y = -0.5;
+    this.root.add(npc.group);
+    this.visitor = { user: user.id, npc };
+    this.interactions.register({ id: `visitor:${user.id}`, object: npc.group, label: () => `E — Parler à ${user.firstName} (vient vous voir)`, onInteract: () => this.actions.talkToVisitor(user) });
+  }
+
+  hideVisitor(): void {
+    if (!this.visitor) return;
+    const seated = this.seated.get(this.visitor.user);
+    if (seated) seated.group.visible = true;
+    this.interactions.unregister(`visitor:${this.visitor.user}`);
+    this.root.remove(this.visitor.npc.group);
+    this.visitor = null;
+  }
+
+  get visitorUser(): string | null {
+    return this.visitor?.user ?? null;
+  }
+
+  /** Affiche la bulle « ! » au-dessus du chef. */
+  setBossBubble(on: boolean): void {
+    const b = this.boss.group.getObjectByName('bubble');
+    if (b) b.visible = on;
   }
 
   /** Nombre d'utilisateurs présents. */
@@ -288,6 +397,15 @@ export class World {
   update(dt: number): void {
     this.time += dt;
     this.rack.updateLeds(this.net, this.time);
+    if (this.miniSwitch.visible) {
+      const l = this.miniSwitch.getObjectByName('ms-leds') as THREE.Mesh;
+      (l.material as THREE.MeshBasicMaterial).color.setHex(Math.sin(this.time * 25) > 0 ? 0xffa000 : 0x332200);
+    }
+    if (this.visitor) {
+      animateNpc(this.visitor.npc, this.time);
+      const b = this.visitor.npc.group.getObjectByName('bubble');
+      if (b) b.position.y = 2.05 + Math.sin(this.time * 4) * 0.04;
+    }
     for (const d of this.doors) d.update(dt);
     for (const n of this.npcs) animateNpc(n, this.time);
   }

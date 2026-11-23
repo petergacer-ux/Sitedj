@@ -31,6 +31,7 @@ export class Hud {
       ['ZQSD / WASD', 'se déplacer'],
       ['Maj', 'courir'],
       ['C', 'se baisser'],
+      ['1-9 / molette', 'objet en main'],
       ['E / clic', 'interagir'],
       ['M', 'plan de l’étage'],
       ['H', 'masquer l’aide'],
@@ -100,7 +101,7 @@ export class Hud {
     this.stats.innerHTML = `
       <div class="stat-line"><span class="stat-level">${escapeHtml(state.levelName)}</span><span class="stat-xp">${state.xp} XP</span></div>
       <div class="bar"><div class="bar-fill xp" style="width:${pct}%"></div></div>
-      <div class="stat-line"><span>🎫 Tickets ouverts</span><b>${state.openTicketDesks.size}</b></div>
+      <div class="stat-line"><span>🎫 Tickets ouverts</span><b>${state.openTicketCount}</b></div>
       <div class="stat-line"><span>${satEmoji} Satisfaction</span><b>${sat} %</b></div>
       <div class="stat-line"><span>⚡ Énergie</span><b>${Math.round(state.energy)}</b></div>
       <div class="bar"><div class="bar-fill" style="width:${state.energy}%;background:${energyColor}"></div></div>`;

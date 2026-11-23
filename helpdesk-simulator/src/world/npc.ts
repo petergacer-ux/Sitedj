@@ -80,3 +80,34 @@ export function animateNpc(npc: NpcBuild, t: number): void {
   npc.head.rotation.y = Math.sin(t * 0.4 + npc.phase) * 0.25 + Math.sin(t * 1.3 + npc.phase) * 0.05;
   npc.head.rotation.x = Math.sin(t * 0.25 + npc.phase * 2) * 0.08 + 0.1;
 }
+
+/** PNJ debout (visite au helpdesk, chef de service…). Face vers -z local. */
+export function buildStandingNpc(look: { shirt: number; skin: number; hair: number; pants?: number }, name: string): NpcBuild {
+  const g = new THREE.Group();
+  g.name = name;
+  const pants = look.pants ?? 0x2f3640;
+  for (const sx of [-0.1, 0.1]) {
+    g.add(part([0.13, 0.8, 0.15], pants, [sx, 0.4, 0]));
+    g.add(part([0.14, 0.06, 0.24], 0x1a1a1a, [sx, 0.03, -0.04]));
+  }
+  g.add(part([0.42, 0.6, 0.24], look.shirt, [0, 1.1, 0]));
+  for (const sx of [-0.27, 0.27]) {
+    g.add(part([0.1, 0.55, 0.11], look.shirt, [sx, 1.08, 0]));
+    g.add(part([0.08, 0.08, 0.08], look.skin, [sx, 0.77, 0]));
+  }
+  const head = new THREE.Group();
+  head.position.set(0, 1.45, 0);
+  head.add(part([0.1, 0.08, 0.1], look.skin, [0, 0, 0]));
+  head.add(part([0.24, 0.27, 0.24], look.skin, [0, 0.17, 0]));
+  head.add(part([0.26, 0.09, 0.26], look.hair, [0, 0.32, 0.01]));
+  head.add(part([0.26, 0.18, 0.06], look.hair, [0, 0.22, 0.12]));
+  mergeByColor(head);
+  mergeByColor(g);
+  g.add(head);
+  // Bulle « ! » au-dessus de la tête (visible quand il attend quelque chose)
+  const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffc107 }));
+  bubble.position.set(0, 2.05, 0);
+  bubble.name = 'bubble';
+  g.add(bubble);
+  return { group: g, head, phase: Math.random() * 10 };
+}

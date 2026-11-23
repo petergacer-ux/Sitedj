@@ -6,7 +6,7 @@ import type { Quality, Settings } from '../state/settings';
 import { el, escapeHtml } from './dom';
 
 export interface MenuCallbacks {
-  onStart(continueGame: boolean): void;
+  onStart(kind: 'new' | 'continue' | 'sandbox'): void;
   onResume(): void;
   onSave(): void;
   onLoad(): void;
@@ -34,6 +34,7 @@ export class Menus {
         <div class="menu-buttons">
           <button class="btn primary" data-act="new">Nouvelle partie</button>
           <button class="btn" data-act="continue">Continuer la partie sauvegardée</button>
+          <button class="btn" data-act="sandbox">🧪 Bac à sable (sans chrono)</button>
           <button class="btn" data-act="options">Options</button>
         </div>
         <div class="controls-grid touch-only">
@@ -56,9 +57,10 @@ export class Menus {
         </div>
         <p class="note kbd-only">Cliquer sur un bouton verrouille la souris dans le jeu (Pointer Lock). Appuyez sur <kbd>Échap</kbd> pour la libérer.</p>
       </div>`;
-    this.start.querySelector('[data-act="new"]')!.addEventListener('click', () => cb.onStart(false));
+    this.start.querySelector('[data-act="new"]')!.addEventListener('click', () => cb.onStart('new'));
+    this.start.querySelector('[data-act="sandbox"]')!.addEventListener('click', () => cb.onStart('sandbox'));
     const cont = this.start.querySelector<HTMLButtonElement>('[data-act="continue"]')!;
-    cont.addEventListener('click', () => cb.onStart(true));
+    cont.addEventListener('click', () => cb.onStart('continue'));
     this.start.querySelector('[data-act="options"]')!.addEventListener('click', () => this.showOptions('start'));
     this.refreshContinue = () => {
       cont.style.display = hasSave() ? '' : 'none';

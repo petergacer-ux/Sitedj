@@ -43,6 +43,14 @@ export class InteractionSystem {
     return item;
   }
 
+  unregister(id: string): void {
+    const it = this.items.get(id);
+    if (!it) return;
+    if (this.current === it) this.clear();
+    this.items.delete(id);
+    this.targets = this.targets.filter((t) => t !== it.object);
+  }
+
   get(id: string): Interactable | undefined {
     return this.items.get(id);
   }

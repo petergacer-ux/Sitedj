@@ -54,6 +54,11 @@ interface Endpoint {
   apipa: boolean;
 }
 
+/** Adresse privée RFC 1918 (ou APIPA) ? */
+export function isPrivate(ip: string): boolean {
+  return /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|127\.)/.test(ip);
+}
+
 export function splitRef(ref: PortRef): [string, string] {
   const i = ref.indexOf(':');
   return [ref.slice(0, i), ref.slice(i + 1)];
@@ -70,7 +75,7 @@ export function defaultPort(): SwitchPortConfig {
 export class Network {
   state: NetworkState;
   private listeners = new Set<() => void>();
-  private cache: { version: number; parent: Map<string, string>; compIds: Map<string, number> } | null = null;
+  private cache: { version: number; parent: Map<string, string>; compIds: Map<string, number>; loops: Set<number> } | null = null;
 
   constructor(state: NetworkState) {
     this.state = state;
@@ -266,7 +271,7 @@ export class Network {
     return refs;
   }
 
-  private graph(): { parent: Map<string, string>; compIds: Map<string, number> } {
+  private graph(): { parent: Map<string, string>; compIds: Map<string, number>; loops: Set<number> } {
     if (this.cache && this.cache.version === this.state.version) return this.cache;
     const parent = new Map<string, string>();
     const find = (x: string): string => {
@@ -276,10 +281,14 @@ export class Network {
       parent.set(x, r);
       return r;
     };
-    const union = (a: string, b: string) => {
+    // Une union entre deux nœuds DÉJÀ reliés = boucle de niveau 2 (pas de spanning-tree simulé
+    // sur les petits switchs perso) → tempête de diffusion dans ce domaine.
+    const loopNodes: string[] = [];
+    const union = (a: string, b: string, physical = true) => {
       const ra = find(a);
       const rb = find(b);
       if (ra !== rb) parent.set(ra, rb);
+      else if (physical) loopNodes.push(a);
     };
     const seen = new Set<string>();
     for (const ref of this.activePorts()) {
@@ -298,7 +307,7 @@ export class Network {
     // Interfaces de management des switchs (SVI)
     for (const [id, sw] of Object.entries(this.state.switches)) {
       const mg = sw.running.mgmt;
-      if (mg && sw.running.vlans[mg.vlan] !== undefined && !sw.rebooting) union(`svi:${id}`, `sw:${id}:${mg.vlan}`);
+      if (mg && sw.running.vlans[mg.vlan] !== undefined && !sw.rebooting) union(`svi:${id}`, `sw:${id}:${mg.vlan}`, false);
     }
     const compIds = new Map<string, number>();
     let n = 0;
@@ -308,13 +317,30 @@ export class Network {
       if (!roots.has(r)) roots.set(r, n++);
       compIds.set(k, roots.get(r)!);
     }
-    this.cache = { version: this.state.version, parent, compIds };
+    const loops = new Set<number>();
+    for (const n of loopNodes) loops.add(compIds.get(n)!);
+    this.cache = { version: this.state.version, parent, compIds, loops };
     return this.cache;
   }
 
   /** Numéro de domaine de diffusion d'un nœud (null s'il est isolé). */
   compOf(node: string): number | null {
     return this.graph().compIds.get(node) ?? null;
+  }
+
+  /** Ce domaine de diffusion contient-il une boucle (tempête de broadcast) ? */
+  inLoop(node: string): boolean {
+    const c = this.compOf(node);
+    return c !== null && this.graph().loops.has(c);
+  }
+
+  /** Un port de switch participe-t-il à une boucle ? */
+  portInLoop(switchId: string, port: string): boolean {
+    const sw = this.state.switches[switchId];
+    if (!sw || !this.link(`${switchId}:${port}`).up) return false;
+    const cfg = sw.running.ports[port];
+    const v = cfg.mode === 'access' ? cfg.accessVlan : cfg.nativeVlan;
+    return this.inLoop(`sw:${switchId}:${v}`);
   }
 
   /** VLAN dans laquelle se trouve un hôte (selon le port du switch en face). */
@@ -326,6 +352,16 @@ export class Network {
     const [d, p] = splitRef(l.peer);
     const sw = this.state.switches[d];
     if (!sw) return null;
+    if (sw.unmanaged) {
+      // Derrière un petit switch non administrable : la VLAN est celle du switch d'entreprise en amont.
+      const comp = this.compOf(`host:${hostId}`);
+      for (const [node, c] of this.graph().compIds) {
+        if (c !== comp || !node.startsWith('sw:')) continue;
+        const [, sid, v] = node.split(':');
+        if (!this.state.switches[sid]?.unmanaged) return Number(v);
+      }
+      return null;
+    }
     const cfg = sw.running.ports[p];
     const v = cfg.mode === 'access' ? cfg.accessVlan : cfg.nativeVlan;
     return sw.running.vlans[v] !== undefined ? v : null;
@@ -341,6 +377,7 @@ export class Network {
   private dhcpScopeFor(hostId: string): DhcpScope | null {
     const comp = this.compOf(`host:${hostId}`);
     if (comp === null) return null;
+    if (this.graph().loops.has(comp)) return null; // tempête de broadcast : le DHCP n'aboutit pas
     const srvId = this.state.dhcp.server;
     const srv = this.state.hosts[srvId];
     if (!srv || !srv.powered) return null;
@@ -429,6 +466,7 @@ export class Network {
     if (!src) return { result: 'general' };
     if (ipToInt(targetIp) === null) return { result: 'general' };
     if (targetIp === src.ip || targetIp === '127.0.0.1') return { result: 'ok', ttl: 128 };
+    if (this.graph().loops.has(src.comp)) return { result: 'timeout' };
     const all = this.endpoints();
     const target = all.find((e) => e.ip === targetIp && e.id !== src.id);
     const rIfaces = this.routerIfaces();
@@ -446,10 +484,12 @@ export class Network {
     if (!src.gateway || !gw) return { result: 'unreachable', from: src.ip };
     // Interface du routeur elle-même ?
     if (rIfaces.some((r) => r.router === gw.router && r.ip === targetIp)) return { result: 'ok', ttl: 255 };
+    // Internet : tout ce qui n'est pas en adressage privé sort par le pare-feu.
+    if (!isPrivate(targetIp)) return { result: 'ok', ttl: 117 };
     // Le routeur doit avoir une interface dans le sous-réseau de destination, dans le domaine de la cible.
     const out = rIfaces.find((r) => r.router === gw.router && sameSubnet(r.ip, targetIp, r.mask));
     if (!out) return { result: 'unreachable', from: gw.ip };
-    if (!target || target.comp !== out.comp) return { result: 'timeout' };
+    if (!target || target.comp !== out.comp || this.graph().loops.has(target.comp)) return { result: 'timeout' };
     // La réponse doit pouvoir revenir : passerelle correcte côté cible.
     if (target.gateway !== out.ip) return { result: 'timeout' };
     return { result: 'ok', ttl: 127 };
