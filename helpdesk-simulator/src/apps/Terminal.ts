@@ -15,6 +15,30 @@ export interface TerminalBackend {
   busy?(): boolean;
   banner?: string;
   theme: 'ios' | 'cmd';
+  /**
+   * Mémoire persistante (historique ↑/↓ + contenu de l'écran), partagée entre
+   * plusieurs ouvertures du même terminal : on la retrouve en revenant.
+   */
+  store?: TerminalStore;
+}
+
+export interface TerminalStore {
+  history: string[];
+  transcript: string;
+}
+
+const stores = new Map<string, TerminalStore>();
+
+/** Mémoire d'un terminal identifié par une clé (ex. « ios:SW-01 », « cmd:PC-COMPTA-01 »). */
+export function terminalStore(key: string): TerminalStore {
+  let s = stores.get(key);
+  if (!s) stores.set(key, (s = { history: [], transcript: '' }));
+  return s;
+}
+
+/** Efface toutes les mémoires (nouvelle partie). */
+export function resetTerminalStores(): void {
+  stores.clear();
 }
 
 export function createTerminal(backend: TerminalBackend, onClose?: () => void): { root: HTMLElement; focus: () => void; refresh: () => void } {
@@ -25,12 +49,17 @@ export function createTerminal(backend: TerminalBackend, onClose?: () => void): 
   const input = el('input', { class: 'term-input', spellcheck: 'false', autocomplete: 'off', autocapitalize: 'off' });
   line.append(promptEl, input);
   root.append(out, line);
-  const history: string[] = [];
-  let hIndex = 0;
+  const store = backend.store ?? { history: [], transcript: '' };
+  const history = store.history;
+  let hIndex = history.length;
 
   const print = (text: string) => {
     if (!text) return;
     out.textContent += (out.textContent ? '\n' : '') + text;
+    // On garde les 400 dernières lignes à l'écran (et en mémoire).
+    const lines = out.textContent!.split('\n');
+    if (lines.length > 400) out.textContent = lines.slice(-400).join('\n');
+    store.transcript = out.textContent!;
   };
   const scroll = () => (root.scrollTop = root.scrollHeight);
   const refresh = () => {
@@ -40,7 +69,8 @@ export function createTerminal(backend: TerminalBackend, onClose?: () => void): 
     line.classList.toggle('busy', busy);
     scroll();
   };
-  if (backend.banner) print(backend.banner);
+  if (store.transcript) out.textContent = store.transcript;
+  else if (backend.banner) print(backend.banner);
   refresh();
 
   input.addEventListener('keydown', (e) => {
@@ -49,10 +79,14 @@ export function createTerminal(backend: TerminalBackend, onClose?: () => void): 
       const v = input.value;
       print(promptEl.textContent + v);
       input.value = '';
-      if (v.trim()) history.push(v);
+      if (v.trim() && history[history.length - 1] !== v) history.push(v);
+      if (history.length > 100) history.shift();
       hIndex = history.length;
       const r = backend.exec(v);
-      if (r.clear) out.textContent = '';
+      if (r.clear) {
+        out.textContent = '';
+        store.transcript = '';
+      }
       print(r.out);
       refresh();
       if (r.close) onClose?.();
@@ -85,6 +119,7 @@ export function createTerminal(backend: TerminalBackend, onClose?: () => void): 
     } else if (e.key === 'l' && e.ctrlKey) {
       e.preventDefault();
       out.textContent = '';
+      store.transcript = '';
     }
   });
   root.addEventListener('click', () => input.focus());

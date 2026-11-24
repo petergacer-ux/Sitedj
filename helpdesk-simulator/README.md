@@ -142,7 +142,8 @@ chaque grade débloque des pannes plus complexes. Énergie : le café la remonte
 `do …`, `exit`, `end`, Ctrl+Z, `show vlan [brief]`, `show interfaces status|trunk|fa0/x`, `show ip interface brief`,
 `show mac address-table`, `show running-config [interface …]`, `show startup-config`, `show version`, `show history`,
 `ping`, `copy running-config startup-config`, `write memory`, `reload`.
-Abréviations (`conf t`, `int fa0/5`, `sh vlan br`, `no shut`, `wr`), **Tab**, **?**, ↑/↓, et vrais messages d’erreur IOS.
+Abréviations (`conf t`, `int fa0/5`, `sh vlan br`, `no shut`, `wr`), **Tab**, **?**, ↑/↓ et vrais messages d’erreur IOS.
+L’historique (↑/↓) et l’écran de chaque terminal sont **conservés** quand on ferme la fenêtre : un historique par switch (partagé entre la console et le SSH) et un par poste Windows.
 
 ### Les 28 scénarios
 

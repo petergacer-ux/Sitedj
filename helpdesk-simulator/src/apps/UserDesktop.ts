@@ -10,7 +10,7 @@ import { passwordComplexityError, type Office } from '../sim/Office';
 import { WindowsShell } from '../sim/WindowsShell';
 import { formatTime } from '../state/clock';
 import { el, escapeHtml } from '../ui/dom';
-import { createTerminal } from './Terminal';
+import { createTerminal, terminalStore } from './Terminal';
 
 export interface DesktopDeps {
   office: Office;
@@ -199,6 +199,7 @@ export function buildUserDesktop(d: DesktopDeps): HTMLElement {
       term ??= createTerminal(
         {
           theme: 'cmd',
+          store: terminalStore(`cmd:${host}`),
           banner: 'Microsoft Windows [version 10.0.19045.4529]\n(c) Microsoft Corporation. Tous droits réservés.\n',
           prompt: () => shell.prompt,
           exec: (line) => {

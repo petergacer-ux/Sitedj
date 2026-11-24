@@ -1,7 +1,7 @@
 /** Console série d'un switch (câble console bleu) ou session SSH depuis le poste helpdesk. */
 import { IosCli } from '../cli/IosCli';
 import type { Network } from '../network/Network';
-import { createTerminal } from './Terminal';
+import { createTerminal, resetTerminalStores, terminalStore } from './Terminal';
 
 const sessions = new Map<string, IosCli>();
 
@@ -17,6 +17,7 @@ export function cliFor(net: Network, switchId: string, onReload: () => void): Io
 
 export function resetCliSessions(): void {
   sessions.clear();
+  resetTerminalStores();
 }
 
 export function buildSwitchConsole(net: Network, switchId: string, onReload: () => void, via: 'console' | 'ssh', onClose?: () => void) {
@@ -30,6 +31,8 @@ export function buildSwitchConsole(net: Network, switchId: string, onReload: () 
     {
       theme: 'ios',
       banner,
+      // Même historique en console et en SSH : on retrouve ses commandes avec ↑
+      store: terminalStore(`ios:${switchId}`),
       prompt: () => cli.prompt,
       exec: (line) => {
         const out = cli.exec(line);
